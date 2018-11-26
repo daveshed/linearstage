@@ -23,9 +23,17 @@ SEQUENCE = [
     [0,1,1,0]
 ]
 
-MS_DELAY = 10
-
 END_STOP_PIN = 22
 
-MAX_STAGE_LIMIT = 4400
-MIN_STAGE_LIMIT = 0
+MOTOR_CONFIG = {
+    'pins': [COIL_A1_PIN, COIL_A2_PIN, COIL_B1_PIN, COIL_B2_PIN],
+    'sequence': SEQUENCE,
+    'ms_delay': 10,
+}
+
+STAGE_CONFIG = {
+    'end_stop': {'pin': END_STOP_PIN, 'normally_high': True},
+    'motor': MOTOR_CONFIG,
+    'min_limit': 0,
+    'max_limit': 4400,
+}

@@ -10,11 +10,7 @@ sys.modules['RPi.GPIO'] = mock_gpio
 sys.modules['time'] = mock_time
 ################################################################################
 from linearstage.config import (
-    COIL_A1_PIN,
-    COIL_A2_PIN,
-    COIL_B1_PIN,
-    COIL_B2_PIN,
-    SEQUENCE,
+    MOTOR_CONFIG,
     setup_logger,
 )
 from linearstage.motor import Motor
@@ -93,12 +89,7 @@ class StepperMotorTestGroup(unittest.TestCase):
     
     def setUp(self):
         mock_gpio.reset_mock()
-        self.motor = Motor([
-            COIL_A1_PIN,
-            COIL_A2_PIN,
-            COIL_B1_PIN,
-            COIL_B2_PIN
-        ], SEQUENCE)
+        self.motor = Motor.from_config(MOTOR_CONFIG)
 
     def test_forward_step_gpio_sequence(self):
         self.motor.forward(steps=1)

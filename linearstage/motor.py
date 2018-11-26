@@ -5,24 +5,25 @@ from time import sleep
 from logging import getLogger
 
 from linearstage.coil import Coil
-from linearstage.config import (
-    COIL_A1_PIN,
-    COIL_A2_PIN,
-    COIL_B1_PIN,
-    COIL_B2_PIN,
-    MS_DELAY,
-    SEQUENCE,
-)
 
 
 logger = getLogger("motor")
 
 class Motor:
 
-    def __init__(self, pins, sequence):
+    def __init__(self, pins, sequence, ms_delay):
         logger.info("Instantiated on pins {}".format(pins))
         self._coils = [Coil(pin) for pin in pins]
         self._seq = sequence
+        self._delay = ms_delay
+
+    @classmethod
+    def from_config(cls, config: dict):
+        return cls(
+            config['pins'],
+            config['sequence'],
+            config['ms_delay']
+        )
 
     def _set_sub_step(self, states):
         if len(states) != len(self._coils):
@@ -38,12 +39,12 @@ class Motor:
     def _step_forward(self):
         for state in self._seq:
             self._set_sub_step(state)
-            sleep(MS_DELAY / 1000)
+            sleep(self._delay / 1000)
 
     def _step_backward(self):
         for state in reversed(self._seq):
             self._set_sub_step(state)
-            sleep(MS_DELAY / 1000)
+            sleep(self._delay / 1000)
 
     def deactivate(self):
         logger.info("Deactivating coils")
@@ -60,18 +61,3 @@ class Motor:
         for i in range(steps):
             self._step_backward()
         logger.info("Done")
-
-if __name__ == '__main__':
-    motor = Motor(
-    pins=[
-        COIL_A1_PIN,
-        COIL_A2_PIN,
-        COIL_B1_PIN,
-        COIL_B2_PIN,
-    ],
-    sequence=SEQUENCE)
-    while True:
-        steps = int(input("How many steps forward? "))
-        motor.forward(steps)
-        steps = int(input("How many steps backwards? "))
-        motor.backward(steps)

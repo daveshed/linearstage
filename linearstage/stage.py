@@ -2,20 +2,9 @@ import logging
 from time import sleep
 from sys import stdout
 
-from linearstage.config import (
-    COIL_A1_PIN,
-    COIL_A2_PIN,
-    COIL_B1_PIN,
-    COIL_B2_PIN,
-    END_STOP_PIN,
-    MIN_STAGE_LIMIT,
-    MAX_STAGE_LIMIT,
-    SEQUENCE,
-    setup_logger,
-)
-from linearstage.endstop import EndStop
+from linearstage.config import STAGE_CONFIG
 from linearstage.motor import Motor
-
+from linearstage.endstop import EndStop
 
 logger = logging.getLogger("stage")
 
@@ -34,13 +23,24 @@ class Stage:
     position index. The stage must be homed in order to have a meaningful
     position.
     """    
-    def __init__(self, motor, end_stop):
+    def __init__(self, motor, end_stop, min_limit, max_limit):
         logger.info("Instantiating stage")
         self.motor = motor
         self.end_stop = end_stop
+        self._min = min_limit
+        self._max = max_limit
         # position is undefined at startup. Stage needs to home first.
         self._position = None
         self.home()
+
+    @classmethod
+    def from_config(cls, config: dict):
+        motor = Motor.from_config(config['motor'])
+        end_stop = EndStop(
+            config['end_stop']['pin'],
+            config['end_stop']['normally_high']
+        )
+        return cls(motor, end_stop, config['min_limit'], config['max_limit'])
 
     def home(self):
         logger.info("Homing stage...")
@@ -53,7 +53,7 @@ class Stage:
 
     def end(self):
         logger.info("Stage moving to end stop...")
-        self.position = MAX_STAGE_LIMIT
+        self.position = self._max
 
     @property
     def position(self):
@@ -65,7 +65,7 @@ class Stage:
     @position.setter
     def position(self, request):
         logger.info("Moving to position {}...".format(request))
-        if request > MAX_STAGE_LIMIT or request < MIN_STAGE_LIMIT:
+        if request > self._max or request < self._min:
                 raise OutOfRangeError("Cannot go to position {}"
                     .format(request))
         delta = request - self._position
@@ -76,17 +76,3 @@ class Stage:
         self.motor.deactivate()
         self._position = request
         logger.info("Done")
-
-
-if __name__ == '__main__':
-    setup_logger()
-    endstop = EndStop(END_STOP_PIN)
-    motor = Motor(
-        pins=[
-            COIL_A1_PIN,
-            COIL_A2_PIN,
-            COIL_B1_PIN,
-            COIL_B2_PIN,
-        ],
-        sequence=SEQUENCE)
-    linearstage = Stage(motor, endstop)
