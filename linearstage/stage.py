@@ -56,6 +56,10 @@ class Stage:
         self.position = self._max
 
     @property
+    def max(self):
+        return self._max
+
+    @property
     def position(self):
         logger.info("Reading position...")
         if self._position is None:
