@@ -1,6 +1,6 @@
 from logging import getLogger
 
-from linearstage.config import STAGE_CONFIG
+from linearstage.config import STAGE_CONFIG, setup_logger
 from linearstage.stage import Stage
 
 logger = getLogger("motor")
