@@ -3,17 +3,11 @@ from time import sleep
 from sys import stdout
 
 from linearstage.config import STAGE_CONFIG
-from linearstage.motor import Motor
 from linearstage.endstop import EndStop
+from linearstage import error
+from linearstage.motor import Motor
 
 logger = logging.getLogger("stage")
-
-
-class OutOfRangeError(Exception):
-    pass
-
-class TimeOutError(Exception):
-    pass
 
 
 class Stage:
@@ -70,7 +64,7 @@ class Stage:
     def position(self, request):
         logger.info("Moving to position {}...".format(request))
         if request > self._max or request < self._min:
-                raise OutOfRangeError("Cannot go to position {}"
+                raise error.OutOfRangeError("Cannot go to position {}"
                     .format(request))
         delta = request - self._position
         if delta > 0:
