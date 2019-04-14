@@ -1,5 +1,7 @@
-class OutOfRangeError(Exception):
-    pass
+"""Error definitions for the linear stage"""
 
-class TimeoutError(Exception):
-    pass
+class OutOfRangeError(Exception):
+    """
+    Raised when the linear stage is requested to move outside of its allowed
+    range.
+    """
