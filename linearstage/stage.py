@@ -99,8 +99,7 @@ class Stage:
         """
         _LOGGER.info("Moving to position %r...", request)
         if request > self._max or request < self._min:
-            raise error.OutOfRangeError(
-                "Cannot go to position {}".format(request))
+            raise error.OutOfRangeError("Cannot go to position %d" % request)
         delta = request - self._position
         if delta > 0:
             self.motor.forward(delta)

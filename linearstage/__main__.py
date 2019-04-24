@@ -14,8 +14,8 @@ setup_logger()
 while True:
     try:
         STAGE.position = int(input("Set position to? "))
-    except ValueError as error:
-        LOGGER.error(
-            "Could not parse import. Please supply an integer %r", repr(error))
+    except ValueError:
+        LOGGER.exception(
+            "Could not parse input. Please supply an integer position")
     except KeyboardInterrupt:
         break
