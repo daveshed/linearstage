@@ -1,19 +1,16 @@
+"""
+The linear stage module that defines a software driver of a hardware assembly
+comprising stepper motor, track and end stop limit switch.
+"""
+
 import logging
 from time import sleep
-from sys import stdout
 
-from linearstage.config import STAGE_CONFIG
-from linearstage.motor import Motor
+from linearstage import error
 from linearstage.endstop import EndStop
+from linearstage.motor import Motor
 
-logger = logging.getLogger("stage")
-
-
-class OutOfRangeError(Exception):
-    pass
-
-class TimeOutError(Exception):
-    pass
+_LOGGER = logging.getLogger("stage")
 
 
 class Stage:
@@ -22,9 +19,17 @@ class Stage:
     stop switch is required at one end (left-hand-side x = 0) to reset the
     position index. The stage must be homed in order to have a meaningful
     position.
-    """    
+
+    Keyword arguments:
+    motor -- a stepper motor instance used to drive the stage
+    end_stop -- an end stop instance to inform when the stage has reached its
+    home position.
+    min_limit -- minimum stage position index
+    max_limit -- maximum stage position index
+    """
     def __init__(self, motor, end_stop, min_limit, max_limit):
-        logger.info("Instantiating stage")
+        _LOGGER.info("Instantiating stage")
+        # TODO: end stop should notify (ie. stage should be an observer)
         self.motor = motor
         self.end_stop = end_stop
         self._min = min_limit
@@ -35,6 +40,12 @@ class Stage:
 
     @classmethod
     def from_config(cls, config: dict):
+        """
+        Returns a LinearStage instance instance from a config dictionary
+
+        Keyword arguments:
+        config -- a dictionary that defines the stage's configuration parameters
+        """
         motor = Motor.from_config(config['motor'])
         end_stop = EndStop(
             config['end_stop']['pin'],
@@ -43,35 +54,52 @@ class Stage:
         return cls(motor, end_stop, config['min_limit'], config['max_limit'])
 
     def home(self):
-        logger.info("Homing stage...")
+        """
+        Send the stage to its home position
+        """
+        _LOGGER.info("Homing stage...")
         while not self.end_stop.triggered:
             self.motor.backward(1)
             sleep(0.01)
-        logger.info("Done")
+        _LOGGER.info("Done")
         self._position = 0
         self.motor.deactivate()
 
     def end(self):
-        logger.info("Stage moving to end stop...")
+        """
+        Move the stage to its end position
+        """
+        _LOGGER.info("Stage moving to end stop...")
         self.position = self._max
 
     @property
     def max(self):
+        """
+        Returns the maximum stage position index
+        """
         return self._max
 
     @property
     def position(self):
-        logger.info("Reading position...")
+        """
+        Get the stage position index
+        """
+        _LOGGER.info("Reading position...")
         if self._position is None:
             raise AssertionError("Position is undefined. Go to home position")
         return self._position
 
     @position.setter
-    def position(self, request):
-        logger.info("Moving to position {}...".format(request))
+    def position(self, request: int):
+        """
+        Move the stage to the requested position index
+
+        Keyword arguments:
+        request -- requested position index
+        """
+        _LOGGER.info("Moving to position %r...", request)
         if request > self._max or request < self._min:
-                raise OutOfRangeError("Cannot go to position {}"
-                    .format(request))
+            raise error.OutOfRangeError("Cannot go to position %d" % request)
         delta = request - self._position
         if delta > 0:
             self.motor.forward(delta)
@@ -79,4 +107,4 @@ class Stage:
             self.motor.backward(delta)
         self.motor.deactivate()
         self._position = request
-        logger.info("Done")
+        _LOGGER.info("Done")

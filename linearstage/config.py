@@ -1,7 +1,13 @@
+"""
+Configuration file for the linear stage based on...
+5V Stepper Motor 28BYJ-48 With Drive Test Module Board ULN2003 5 Line 4 Phase
+with microswitch endstop.
+"""
 import logging
 from sys import stdout
 
 def setup_logger():
+    """Basic logger configuration"""
     logging.basicConfig(
         format='%(asctime)s[%(name)s]:%(levelname)s:%(message)s',
         stream=stdout,
@@ -13,14 +19,14 @@ COIL_B1_PIN = 6  # blue
 COIL_B2_PIN = 19 # yellow
 
 SEQUENCE = [
-    [0,1,0,0],
-    [0,1,0,1],
-    [0,0,0,1],
-    [1,0,0,1],
-    [1,0,0,0],
-    [1,0,1,0],
-    [0,0,1,0],
-    [0,1,1,0]
+    [0, 1, 0, 0],
+    [0, 1, 0, 1],
+    [0, 0, 0, 1],
+    [1, 0, 0, 1],
+    [1, 0, 0, 0],
+    [1, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 1, 1, 0],
 ]
 
 END_STOP_PIN = 22

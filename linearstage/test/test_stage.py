@@ -1,17 +1,16 @@
 import logging
 import unittest
-from unittest.mock import Mock, patch, call
+from unittest.mock import Mock
 #################### patch gpio module before import ###########################
 import sys
 mock_gpio = Mock()
 mock_time = Mock()
 # This only seems to work in python 3.7
 sys.modules['RPi.GPIO'] = mock_gpio
-sys.modules['time'] = mock_time
 ################################################################################
-
+from linearstage import error
 from linearstage.config import STAGE_CONFIG, setup_logger
-from linearstage.stage import Stage, OutOfRangeError
+from linearstage.stage import Stage
 
 setup_logger()
 logger = logging.getLogger("test_stage")
@@ -105,8 +104,8 @@ class TrackTests(unittest.TestCase):
 
     def test_request_out_of_range_raises_assert(self):
         target_position = MAX_STAGE_LIMIT + 1
-        with self.assertRaises(OutOfRangeError):
+        with self.assertRaises(error.OutOfRangeError):
             self.stage.position = target_position
         target_position = MIN_STAGE_LIMIT - 1
-        with self.assertRaises(OutOfRangeError):
+        with self.assertRaises(error.OutOfRangeError):
             self.stage.position = target_position
