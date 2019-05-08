@@ -7,10 +7,6 @@ import RPi.GPIO as GPIO
 
 _LOGGER = getLogger("end stop")
 
-# FIXME: These options should be set globally if at all
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
 
 class EndStop:
     """

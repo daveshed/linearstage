@@ -6,6 +6,15 @@ with microswitch endstop.
 import logging
 from sys import stdout
 
+import RPi.GPIO as GPIO
+# The GPIO.BOARD option specifies that you are referring to the pins by the
+# number of the pin the the plug - i.e the numbers printed on the board
+# (e.g. P1) and in the middle of the diagrams below.
+# The GPIO.BCM option means that you are referring to the pins by the "Broadcom
+# SOC channel" number, these are the numbers after "GPIO" in the green
+# rectangles around the outside of the below diagrams.
+GPIO.setmode(GPIO.BCM)
+
 def setup_logger():
     """Basic logger configuration"""
     logging.basicConfig(

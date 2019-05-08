@@ -29,7 +29,6 @@ class Stage:
     """
     def __init__(self, motor, end_stop, min_limit, max_limit):
         _LOGGER.info("Instantiating stage")
-        # TODO: end stop should notify (ie. stage should be an observer)
         self.motor = motor
         self.end_stop = end_stop
         self._min = min_limit

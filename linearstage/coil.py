@@ -3,10 +3,6 @@ The driver for electromagnetic coils connected to digital gpio
 """
 import RPi.GPIO as GPIO
 
-# FIXME: these options should be set globally if at all
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
-
 
 class Coil:
     """
