@@ -31,12 +31,12 @@ class EndStop:
     @property
     def triggered(self):
         """
-        Returns the stage of the end stop
+        Returns the state of the end stop
         """
         state = bool(GPIO.input(self._pin))
         if self._inverted:
             triggered = not state
         else:
             triggered = state
-        _LOGGER.info("End stop triggered: %r", triggered)
+        _LOGGER.debug("End stop triggered: %r", triggered)
         return triggered

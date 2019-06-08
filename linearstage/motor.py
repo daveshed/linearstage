@@ -57,10 +57,10 @@ class Motor:
         Keyword arguments:
         steps -- an integer number of steps to move
         """
-        _LOGGER.info("Moving forward %r steps", steps)
+        _LOGGER.debug("Moving forward %r steps", steps)
         for _ in range(steps):
             self._step_forward()
-        _LOGGER.info("Done")
+        _LOGGER.debug("Done")
 
     def backward(self, steps):
         """
@@ -69,10 +69,11 @@ class Motor:
         Keyword arguments:
         steps -- an integer number of steps to move
         """
-        _LOGGER.info("Moving backward %r steps", steps)
+        _LOGGER.debug("Moving backward %r steps", steps)
         for _ in range(steps):
             self._step_backward()
-        _LOGGER.info("Done")
+        _LOGGER.debug("Done")
+
     def _set_sub_step(self, states):
         if len(states) != len(self._coils):
             raise AssertionError(
