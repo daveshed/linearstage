@@ -6,9 +6,9 @@ comprising stepper motor, track and end stop limit switch.
 import logging
 from time import sleep
 
-from stage import error
-from stage.endstop import EndStop
-from stage.motor import Motor
+from linearstage import error
+# from linearstage.endstop import EndStop
+# from linearstage.motor import Motor
 
 _LOGGER = logging.getLogger("STAGE")
 
@@ -37,20 +37,19 @@ class Stage:
         self._position = None
         self.home()
 
-    @classmethod
-    def from_config(cls, config: dict):
-        """
-        Returns Stage instance instance from a config dictionary
-
-        Keyword arguments:
-        config -- a dictionary that defines the stage's configuration parameters
-        """
-        motor = Motor.from_config(config['motor'])
-        end_stop = EndStop(
-            config['end_stop']['pin'],
-            config['end_stop']['normally_high']
-        )
-        return cls(motor, end_stop, config['min_limit'], config['max_limit'])
+    # @classmethod
+    # def from_config(cls, config: dict):
+    #     """
+    #     Returns a LinearStage instance instance from a config dictionary
+    #     Keyword arguments:
+    #     config -- a dictionary that defines the stage's configuration parameters
+    #     """
+    #     motor = Motor.from_config(config['motor'])
+    #     end_stop = EndStop(
+    #         config['end_stop']['pin'],
+    #         config['end_stop']['normally_high']
+    #     )
+    #     return cls(motor, end_stop, config['min_limit'], config['max_limit'])
 
     def home(self):
         """

@@ -27,6 +27,9 @@ COIL_B1_PIN = 19 # yellow
 COIL_A2_PIN = 13 # pink
 COIL_B2_PIN = 6  # blue
 
+# the stepper sequence is very simple - this one is called "Full-step drive"
+# other drive schemes are also possible with the same hardware such as "full-
+# step" and "half-step". Using a list here is a noddy solution but works well.
 SEQUENCE = [
     [1, 0, 0, 0],
     [1, 1, 0, 0],

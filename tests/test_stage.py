@@ -1,22 +1,15 @@
 import logging
 import unittest
-from unittest.mock import Mock
-#################### patch gpio module before import ###########################
-import sys
-mock_gpio = Mock()
-mock_time = Mock()
-# This only seems to work in python 3.7
-sys.modules['RPi.GPIO'] = mock_gpio
-################################################################################
-from stage import error
-from stage.config import STAGE_CONFIG, setup_logger
-from stage.stage import Stage
+from unittest import mock
 
-setup_logger()
-logger = logging.getLogger("test_stage")
+from linearstage import error
+from linearstage.stage import Stage
 
-MIN_STAGE_LIMIT = STAGE_CONFIG['min_limit']
-MAX_STAGE_LIMIT = STAGE_CONFIG['max_limit']
+logger = logging.getLogger("mocks")
+
+
+MIN_STAGE_LIMIT = 0
+MAX_STAGE_LIMIT = 100
 
 class MockEndStop:
 
@@ -49,6 +42,7 @@ class MockMotor:
 
     def deactivate(self):
         self.deactivated = True
+
 
 class FakeTrackHardware:
     """
