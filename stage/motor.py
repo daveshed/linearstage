@@ -7,7 +7,9 @@ import abc
 from time import sleep
 from logging import getLogger
 
-_LOGGER = getLogger("MOTOR")
+from linearstage import coils
+
+_LOGGER = getLogger("motor")
 
 
 class DriveScheme(abc.ABC):
@@ -26,56 +28,56 @@ class DriveScheme(abc.ABC):
 class FullStepDriveScheme(DriveScheme):
     name = "Full Step"
     sequence = [
-        [1, 0, 0, 1],
-        [1, 0, 0, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 0],
-        [0, 1, 1, 0],
-        [0, 1, 1, 0],
-        [0, 0, 1, 1],
-        [0, 0, 1, 1],
+        coils.State(1, 0, 0, 1),
+        coils.State(1, 0, 0, 1),
+        coils.State(1, 1, 0, 0),
+        coils.State(1, 1, 0, 0),
+        coils.State(0, 1, 1, 0),
+        coils.State(0, 1, 1, 0),
+        coils.State(0, 0, 1, 1),
+        coils.State(0, 0, 1, 1),
     ]
 
 
 class WaveDriveScheme(DriveScheme):
     name = "Wave"
     sequence = [
-        [1, 0, 0, 0],
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
-        [0, 0, 0, 1],
+        coils.State(1, 0, 0, 0),
+        coils.State(1, 0, 0, 0),
+        coils.State(0, 1, 0, 0),
+        coils.State(0, 1, 0, 0),
+        coils.State(0, 0, 1, 0),
+        coils.State(0, 0, 1, 0),
+        coils.State(0, 0, 0, 1),
+        coils.State(0, 0, 0, 1),
     ]
 
 
 class HalfStepDriveScheme(DriveScheme):
     name = "Half Step"
     sequence = [
-        [1, 0, 0, 1],
-        [1, 0, 0, 0],
-        [1, 1, 0, 0],
-        [0, 1, 0, 0],
-        [0, 1, 1, 0],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 0, 0, 1],
+        coils.State(1, 0, 0, 1),
+        coils.State(1, 0, 0, 0),
+        coils.State(1, 1, 0, 0),
+        coils.State(0, 1, 0, 0),
+        coils.State(0, 1, 1, 0),
+        coils.State(0, 0, 1, 0),
+        coils.State(0, 0, 1, 1),
+        coils.State(0, 0, 0, 1),
     ]
 
 
 class UnipolarStepperMotor:
     _MS_DELAY = 20
     """
-    Drives a unipolar steppr motor
+    Drives a unipolar stepper motor
 
     Args:
         coils (linearstage.coil.Coils): An object that defines the motor's
             physical coils.
-        drive_scheme (obj): The drive scheme for the coils in the motor that
-            provides the sequence of states to be passed to the coils when
-            a step is requested.
+        drive_scheme (linearstage.motor.DriveScheme): The drive scheme for the
+            coils in the motor that provides the sequence of states to be
+            passed to the coils when a step is requested.
         ms_delay (int): The delay between setting states of the coils in the
             motor to allow the rotor to move in response to changing excitation.
 
@@ -85,7 +87,7 @@ class UnipolarStepperMotor:
     """
     def __init__(
             self,
-            coils,
+            coils: coils.Coils,
             drive_scheme=FullStepDriveScheme,
             ms_delay=None):
         self._coils = coils
