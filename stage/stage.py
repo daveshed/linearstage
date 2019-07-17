@@ -120,9 +120,7 @@ class Stage:
         """
         Get the stage position index
         """
-        _LOGGER.info("Reading position...")
-        if self._position is None:
-            raise AssertionError("Position is undefined. Go to home position")
+        _LOGGER.debug("Reading position...")
         return self._position
 
     @position.setter
@@ -134,6 +132,16 @@ class Stage:
         request -- requested position index
         """
         _LOGGER.info("Moving to position %r...", request)
+        self._goto_request(request)
+        self._position = request
+        self._at_home_position.clear()
+        _LOGGER.info("Done")
+
+    def _handle_end_stop_triggered(self):
+        _LOGGER.info("End stop triggered")
+        self._at_home_position.set()
+
+    def _goto_request(self, request):
         if request > self._max or request < self._min:
             raise error.OutOfRangeError("Cannot go to position %d" % request)
         delta = request - self._position
@@ -142,8 +150,3 @@ class Stage:
         else:
             self.motor.backward(delta)
         self.motor.deactivate()
-        self._position = request
-        _LOGGER.info("Done")
-
-    def _handle_end_stop_triggered(self):
-        self._at_home_position.set()
