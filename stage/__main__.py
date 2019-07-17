@@ -2,14 +2,30 @@
 Entry point for the stage application that allows a user to set the stage
 position index from the command line.
 """
-from logging import getLogger
+import logging
 
-from stage.config import STAGE_CONFIG, setup_logger
-from stage.stage import Stage
+from linearstage.stage import StageBuilder
+from linearstage.gpio.rpi import RPiGpio
 
-LOGGER = getLogger("STAGE")
-STAGE = Stage.from_config(STAGE_CONFIG)
-setup_logger()
+logging.basicConfig(
+    format='%(asctime)s[%(name)s]:%(levelname)s:%(message)s',
+    stream=stdout,
+    level=logging.INFO)
+
+LOGGER = getLogger("linearstage")
+STAGE = (
+    StageBuilder()
+        .build_gpio(RPiGpio)
+        .build_coils(
+            a1_pin=26, # orange
+            b1_pin=19, # yellow
+            a2_pin=13, # pink
+            b2_pin=6)  # blue
+        .build_motor(drive_scheme='Half Step', ms_delay=10)
+        .build_end_stop(pin=22, active_low=True)
+        .build_track(min_limit=0, max_limit=4400)
+        .build_linear_stage()
+        .get_stage())
 
 while True:
     try:

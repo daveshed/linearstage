@@ -4,10 +4,12 @@ https://github.com/christophrumpel/test_stepper
 https://tutorials-raspberrypi.com/how-to-control-a-stepper-motor-with-raspberry-pi-and-l293d-uln2003a/
 """
 import abc
+from collections import namedtuple
 from time import sleep
 from logging import getLogger
 
-from linearstage import coils
+from linearstage import coil
+from linearstage.gpio.base import GpioBase
 
 _LOGGER = getLogger("motor")
 
@@ -28,47 +30,49 @@ class DriveScheme(abc.ABC):
 class FullStepDriveScheme(DriveScheme):
     name = "Full Step"
     sequence = [
-        coils.State(1, 0, 0, 1),
-        coils.State(1, 0, 0, 1),
-        coils.State(1, 1, 0, 0),
-        coils.State(1, 1, 0, 0),
-        coils.State(0, 1, 1, 0),
-        coils.State(0, 1, 1, 0),
-        coils.State(0, 0, 1, 1),
-        coils.State(0, 0, 1, 1),
+        coil.State(1, 0, 0, 1),
+        coil.State(1, 0, 0, 1),
+        coil.State(1, 1, 0, 0),
+        coil.State(1, 1, 0, 0),
+        coil.State(0, 1, 1, 0),
+        coil.State(0, 1, 1, 0),
+        coil.State(0, 0, 1, 1),
+        coil.State(0, 0, 1, 1),
     ]
 
 
 class WaveDriveScheme(DriveScheme):
     name = "Wave"
     sequence = [
-        coils.State(1, 0, 0, 0),
-        coils.State(1, 0, 0, 0),
-        coils.State(0, 1, 0, 0),
-        coils.State(0, 1, 0, 0),
-        coils.State(0, 0, 1, 0),
-        coils.State(0, 0, 1, 0),
-        coils.State(0, 0, 0, 1),
-        coils.State(0, 0, 0, 1),
+        coil.State(1, 0, 0, 0),
+        coil.State(1, 0, 0, 0),
+        coil.State(0, 1, 0, 0),
+        coil.State(0, 1, 0, 0),
+        coil.State(0, 0, 1, 0),
+        coil.State(0, 0, 1, 0),
+        coil.State(0, 0, 0, 1),
+        coil.State(0, 0, 0, 1),
     ]
 
 
 class HalfStepDriveScheme(DriveScheme):
     name = "Half Step"
     sequence = [
-        coils.State(1, 0, 0, 1),
-        coils.State(1, 0, 0, 0),
-        coils.State(1, 1, 0, 0),
-        coils.State(0, 1, 0, 0),
-        coils.State(0, 1, 1, 0),
-        coils.State(0, 0, 1, 0),
-        coils.State(0, 0, 1, 1),
-        coils.State(0, 0, 0, 1),
+        coil.State(1, 0, 0, 1),
+        coil.State(1, 0, 0, 0),
+        coil.State(1, 1, 0, 0),
+        coil.State(0, 1, 0, 0),
+        coil.State(0, 1, 1, 0),
+        coil.State(0, 0, 1, 0),
+        coil.State(0, 0, 1, 1),
+        coil.State(0, 0, 0, 1),
     ]
 
 
 class UnipolarStepperMotor:
     _MS_DELAY = 20
+    AVAILABLE_DRIVE_SCHEMES = {
+        scheme.name: scheme for scheme in DriveScheme.__subclasses__()}
     """
     Drives a unipolar stepper motor
 
@@ -87,12 +91,12 @@ class UnipolarStepperMotor:
     """
     def __init__(
             self,
-            coils: coils.Coils,
-            drive_scheme=FullStepDriveScheme,
-            ms_delay=None):
+            coils: coil.Coils,
+            drive_scheme: str=HalfStepDriveScheme.name,
+            ms_delay: int=None):
         self._coils = coils
         self._delay = ms_delay if ms_delay is not None else self._MS_DELAY
-        self._drive_scheme = drive_scheme
+        self._drive_scheme = self._get_drive_scheme_obj(drive_scheme)
         _LOGGER.info(
             "Instantiated with coils: %r, delay: %d, drive_scheme: %s",
             coils, self._delay, self._drive_scheme.name)
@@ -103,7 +107,7 @@ class UnipolarStepperMotor:
         The motor's drive scheme
 
         Returns:
-            (str): The motor's drive scheme
+            (str): The name of the motor's drive scheme
         """
         return self._drive_scheme.name
 
@@ -161,3 +165,13 @@ class UnipolarStepperMotor:
         for step in reversed(self._drive_scheme.sequence):
             self._set_step(step)
             sleep(self._delay / 1000)
+
+    @classmethod
+    def _get_drive_scheme_obj(cls, name):
+        try:
+            scheme = cls.AVAILABLE_DRIVE_SCHEMES[name]
+        except KeyError:
+            raise AttributeError(
+                "drive scheme <%s> unrecognised. Please choose from %s"
+                    % (name, cls.AVAILABLE_DRIVE_SCHEMES.keys()))
+        return scheme

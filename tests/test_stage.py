@@ -3,11 +3,10 @@ import unittest
 from unittest import mock
 
 from linearstage import error
-from linearstage.stage import Stage
+from linearstage.stage import Stage, StageBuilder
+from linearstage.gpio.mock import MockGpio
 
-logger = logging.getLogger("mocks")
-
-
+LOGGER = logging.getLogger("mocks")
 MIN_STAGE_LIMIT = 0
 MAX_STAGE_LIMIT = 100
 
@@ -15,15 +14,27 @@ class MockEndStop:
 
     def __init__(self):
         self._triggered = False
+        self._callbacks = []
 
     @property
     def triggered(self):
         return self._triggered
 
-    @triggered.setter
-    def triggered(self, state):
-        self._triggered = state
-        logger.info("end stop set to {}".format(state))
+    def trigger(self):
+        # for tests only...
+        self._triggered = True
+        for callback in self._callbacks:
+            callback()
+
+    def reset(self):
+        # for tests only...
+        self._triggered = False
+
+    def register_callback(self, callback):
+        self._callbacks.append(callback)
+
+    def deregister_callback(self, callback):
+        self._callbacks.remove(callback)
 
 
 class MockMotor:
@@ -33,11 +44,11 @@ class MockMotor:
         self._observer = observer
 
     def forward(self, steps):
-        logger.info("Mock motor forward {} steps".format(steps))
+        LOGGER.info("Mock motor forward {} steps".format(steps))
         self._observer.position += steps
 
     def backward(self, steps):
-        logger.info("Mock motor backward {} steps".format(steps))
+        LOGGER.info("Mock motor backward {} steps".format(steps))
         self._observer.position -= steps
 
     def deactivate(self):
@@ -64,9 +75,9 @@ class FakeTrackHardware:
     @position.setter
     def position(self, request):
         if request >= MIN_STAGE_LIMIT:
-            self._end_stop.triggered = True
+            self._end_stop.trigger()
         self._position = request
-        logger.info("position is {}".format(request))
+        LOGGER.info("position is {}".format(request))
 
 
 class TrackTests(unittest.TestCase):
@@ -81,7 +92,7 @@ class TrackTests(unittest.TestCase):
             self.mock_motor,
             self.mock_end_stop,
             MIN_STAGE_LIMIT,
-            MAX_STAGE_LIMIT
+            MAX_STAGE_LIMIT,
         )
 
     def test_home_resets_position(self):
@@ -103,3 +114,25 @@ class TrackTests(unittest.TestCase):
         target_position = MIN_STAGE_LIMIT - 1
         with self.assertRaises(error.OutOfRangeError):
             self.stage.position = target_position
+
+
+class BuilderTestGroup(unittest.TestCase):
+    
+    def test_stage_builder_can_instantiate(self):
+        MockGpio.triggered = True
+        stage = (
+            StageBuilder()
+                .build_gpio(interface=MockGpio)
+                .build_coils(
+                    a1_pin=26,
+                    b1_pin=19,
+                    a2_pin=13,
+                    b2_pin=6)
+                .build_motor(drive_scheme='Half Step', ms_delay=10)
+                .build_end_stop(pin=22, active_low=True)
+                .build_track(
+                    min_limit=MIN_STAGE_LIMIT, max_limit=MAX_STAGE_LIMIT)
+                .build_linear_stage()
+                .get_stage())
+        self.assertEqual(stage.max, MAX_STAGE_LIMIT)
+        # TODO: Other asserts eg stage.min

@@ -1,8 +1,35 @@
 """
-Abstraction for a single coil connected to digital gpio. Separating this code
-into a module means that RPi.GPIO need not be imported when testing.
+Abstraction for a the the stepper motors windings.
 """
-import RPi.GPIO as GPIO
+from collections import namedtuple
+
+from linearstage.gpio.base import GpioBase
+
+_LABELS = ['a1', 'b1', 'a2', 'b2']
+State = namedtuple('State', _LABELS)
+Pins = namedtuple("Pins", _LABELS)
+
+
+class Coils:
+    def __init__(self, a1, b1, a2, b2):
+        self._coils = [a1, b1, a2, b2]
+
+    @classmethod
+    def from_pins(cls, pins: Pins, gpio: GpioBase):
+        coils = [Coil(label, pin, gpio) for label, pin in zip(_LABELS, pins)]
+        return cls(*coils)
+
+    def deactivate(self):
+        for coil in self._coils:
+            coil.off()
+
+    def set_state(self, state):
+        for coil in self._coils:
+            output = getattr(state, coil.label)
+            if output:
+                coil.on()
+            else:
+                coil.off()
 
 
 class Coil:
@@ -12,9 +39,13 @@ class Coil:
     Args:
         label (str): the label associated with the pin - refers to datasheet
         pin (int): the number of the gpio pin that activates the coil
+        gpio (GpioBase): the gpio object used to control the digital pin to
+            to which the winding is connected. It must implement the GpioBase
+            interface.
     """
-    def __init__(self, label: str, pin: int):
-        GPIO.setup(pin, GPIO.OUT)
+    def __init__(self, label: str, pin: int, gpio: GpioBase):
+        self._gpio = gpio
+        self._gpio.initialise_output(pin)
         self._pin = pin
         self._label = label
         self._active = False
@@ -42,12 +73,12 @@ class Coil:
         Energise the coil
         """
         # pylint: disable=invalid-name
-        GPIO.output(self._pin, 1)
+        self._gpio.set_high(self._pin)
         self._active = True
 
     def off(self):
         """
         De-energise the coil
         """
-        GPIO.output(self._pin, 0)
+        self._gpio.set_low(self._pin)
         self._active = False

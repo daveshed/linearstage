@@ -4,13 +4,61 @@ comprising stepper motor, track and end stop limit switch.
 """
 
 import logging
-from time import sleep
+import threading
 
+from linearstage import coil
 from linearstage import error
-# from linearstage.endstop import EndStop
-# from linearstage.motor import Motor
+from linearstage import endstop
+from linearstage import motor
+from linearstage.gpio.base import GpioBase
 
 _LOGGER = logging.getLogger("STAGE")
+
+
+class StageBuilder:
+
+    def __init__(self):
+        self._coils = None
+        self._motor = None
+        self._end_stop = None
+        self._min_limit = None
+        self._max_limit = None
+        self._stage = None
+        self._gpio = None
+
+    def build_gpio(self, interface: GpioBase):
+        self._gpio = interface
+        return self
+
+    def build_coils(self, a1_pin, b1_pin, a2_pin, b2_pin):
+        self._coils = coil.Coils.from_pins(
+            coil.Pins(a1_pin, b1_pin, a2_pin, b2_pin), self._gpio)
+        return self
+
+    def build_motor(self, drive_scheme, ms_delay):
+        self._motor = motor.UnipolarStepperMotor(
+            self._coils, drive_scheme, ms_delay)
+        return self
+
+    def build_end_stop(self, pin, active_low):
+        self._end_stop = endstop.EndStop(pin, active_low, self._gpio)
+        return self
+
+    def build_track(self, min_limit, max_limit):
+        self._min_limit = min_limit
+        self._max_limit = max_limit
+        return self
+
+    def build_linear_stage(self):
+        self._stage = Stage(
+            motor=self._motor,
+            end_stop=self._end_stop,
+            min_limit=self._min_limit,
+            max_limit=self._max_limit)
+        return self
+
+    def get_stage(self):
+        return self._stage
 
 
 class Stage:
@@ -31,34 +79,24 @@ class Stage:
         _LOGGER.info("Instantiating stage")
         self.motor = motor
         self.end_stop = end_stop
+        self.end_stop.register_callback(self._handle_end_stop_triggered)
         self._min = min_limit
         self._max = max_limit
+        self._at_home_position = threading.Event()
         # position is undefined at startup. Stage needs to home first.
         self._position = None
         self.home()
-
-    # @classmethod
-    # def from_config(cls, config: dict):
-    #     """
-    #     Returns a LinearStage instance instance from a config dictionary
-    #     Keyword arguments:
-    #     config -- a dictionary that defines the stage's configuration parameters
-    #     """
-    #     motor = Motor.from_config(config['motor'])
-    #     end_stop = EndStop(
-    #         config['end_stop']['pin'],
-    #         config['end_stop']['normally_high']
-    #     )
-    #     return cls(motor, end_stop, config['min_limit'], config['max_limit'])
 
     def home(self):
         """
         Send the stage to its home position
         """
         _LOGGER.info("Homing stage...")
-        while not self.end_stop.triggered:
-            self.motor.backward(1)
-            sleep(0.01)
+        # TODO: timeout needed here. what if the stage is stuck or endstop
+        # broken
+        if not self.end_stop.triggered:
+            while not self._at_home_position.is_set():
+                self.motor.backward(1)
         _LOGGER.info("Done")
         self._position = 0
         self.motor.deactivate()
@@ -106,3 +144,6 @@ class Stage:
         self.motor.deactivate()
         self._position = request
         _LOGGER.info("Done")
+
+    def _handle_end_stop_triggered(self):
+        self._at_home_position.set()
