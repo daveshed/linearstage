@@ -10,7 +10,7 @@ class StepperMotorAttributeTestGroup(unittest.TestCase):
         self.fake_coils = mock.Mock(name='coils')
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,
-            drive_scheme=motor.FullStepDriveScheme,
+            drive_scheme=motor.FullStepDriveScheme.name,
             ms_delay=0)
 
     def test_ms_delay_set_on_init_can_be_retreived(self):
@@ -27,7 +27,7 @@ class DriveSchemeTestMixin:
         self.fake_coils = mock.Mock(name='coils')
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,
-            drive_scheme=self.drive_scheme,
+            drive_scheme=self.drive_scheme.name,
             ms_delay=0)
 
     def test_forward_step_gpio_sequence(self):
