@@ -2,14 +2,6 @@ import RPi.GPIO as GPIO
 
 from linearstage.gpio.base import GpioBase
 
-GPIO.setmode(GPIO.BCM)
-# The GPIO.BOARD option specifies that you are referring to the pins by the
-# number of the pin the the plug - i.e the numbers printed on the board
-# (e.g. P1) and in the middle of the diagrams below.
-# The GPIO.BCM option means that you are referring to the pins by the "Broadcom
-# SOC channel" number, these are the numbers after "GPIO" in the green
-# rectangles around the outside of the below diagrams.
-
 
 class RPiGpio(GpioBase):
     _input_active_state = {}
@@ -18,6 +10,16 @@ class RPiGpio(GpioBase):
     Implementation of the GpioBase interface on the raspberry pi.
     https://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/
     """
+    @staticmethod
+    def setup():
+        # The GPIO.BOARD option specifies that you are referring to the pins by the
+        # number of the pin the the plug - i.e the numbers printed on the board
+        # (e.g. P1) and in the middle of the diagrams below.
+        # The GPIO.BCM option means that you are referring to the pins by the "Broadcom
+        # SOC channel" number, these are the numbers after "GPIO" in the green
+        # rectangles around the outside of the below diagrams.
+        GPIO.setmode(GPIO.BCM)
+
     @staticmethod
     def initialise_output(pin: int):
         """
@@ -65,7 +67,7 @@ class RPiGpio(GpioBase):
         Args:
             pin (int): the pin index
         """
-        GPIO.output(pin, 1)        
+        GPIO.output(pin, 1)
 
     @staticmethod
     def set_low(pin: int):

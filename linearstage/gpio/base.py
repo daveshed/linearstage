@@ -5,6 +5,11 @@ class GpioBase(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
+    def setup():
+        return
+
+    @staticmethod
+    @abc.abstractmethod
     def initialise_output(pin: int):
         return
 
