@@ -1,5 +1,5 @@
 PROJECT_TEST_DIR:=tests
-PROJECT_NAME:=linearstage
+PROJECT_NAME:=stage
 
 .PHONY: install-requirements
 install-requirements:

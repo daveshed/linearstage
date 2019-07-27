@@ -6,11 +6,11 @@ comprising stepper motor, track and end stop limit switch.
 import logging
 from time import sleep
 
-from linearstage import error
-from linearstage.endstop import EndStop
-from linearstage.motor import Motor
+from stage import error
+from stage.endstop import EndStop
+from stage.motor import Motor
 
-_LOGGER = logging.getLogger("stage")
+_LOGGER = logging.getLogger("STAGE")
 
 
 class Stage:
@@ -40,7 +40,7 @@ class Stage:
     @classmethod
     def from_config(cls, config: dict):
         """
-        Returns a LinearStage instance instance from a config dictionary
+        Returns Stage instance instance from a config dictionary
 
         Keyword arguments:
         config -- a dictionary that defines the stage's configuration parameters

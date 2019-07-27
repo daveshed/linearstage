@@ -6,10 +6,10 @@ https://tutorials-raspberrypi.com/how-to-control-a-stepper-motor-with-raspberry-
 from time import sleep
 from logging import getLogger
 
-from linearstage.coil import Coil
+from stage.coil import Coil
 
 
-_LOGGER = getLogger("motor")
+_LOGGER = getLogger("MOTOR")
 
 class Motor:
     """
