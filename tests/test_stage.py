@@ -8,9 +8,9 @@ mock_time = Mock()
 # This only seems to work in python 3.7
 sys.modules['RPi.GPIO'] = mock_gpio
 ################################################################################
-from linearstage import error
-from linearstage.config import STAGE_CONFIG, setup_logger
-from linearstage.stage import Stage
+from stage import error
+from stage.config import STAGE_CONFIG, setup_logger
+from stage.stage import Stage
 
 setup_logger()
 logger = logging.getLogger("test_stage")
@@ -66,7 +66,7 @@ class FakeTrackHardware:
     @property
     def position(self):
         return self._position
-    
+
     @position.setter
     def position(self, request):
         if request >= MIN_STAGE_LIMIT:

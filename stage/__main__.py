@@ -1,13 +1,13 @@
 """
-Entry point for the linear stage application that allows a user to set the
-stage position index from the command line.
+Entry point for the stage application that allows a user to set the stage
+position index from the command line.
 """
 from logging import getLogger
 
-from linearstage.config import STAGE_CONFIG, setup_logger
-from linearstage.stage import Stage
+from stage.config import STAGE_CONFIG, setup_logger
+from stage.stage import Stage
 
-LOGGER = getLogger("linearstage")
+LOGGER = getLogger("STAGE")
 STAGE = Stage.from_config(STAGE_CONFIG)
 setup_logger()
 
