@@ -1,7 +1,7 @@
 import unittest
 from unittest import mock
 
-from linearstage import motor
+from stage import motor
 
 
 class StepperMotorAttributeTestGroup(unittest.TestCase):

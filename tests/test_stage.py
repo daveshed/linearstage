@@ -2,11 +2,11 @@ import logging
 import unittest
 from unittest import mock
 
-from linearstage import error
-from linearstage.stage import Stage, StageBuilder
-from linearstage.gpio.mock import MockGpio
+from stage import error
+from stage.stage import Stage, StageBuilder
+from stage.gpio import GpioBase
 
-LOGGER = logging.getLogger("mocks")
+LOGGER = logging.getLogger("MOCKS")
 MIN_STAGE_LIMIT = 0
 MAX_STAGE_LIMIT = 100
 
@@ -124,12 +124,20 @@ class TrackTests(unittest.TestCase):
 
 
 class BuilderTestGroup(unittest.TestCase):
-    
+
     def test_stage_builder_can_instantiate(self):
-        MockGpio.triggered = True
+        # MockGpio.triggered = True
+        end_stop_pin = 22
+        def fake_input_triggered(pin):
+            nonlocal end_stop_pin
+            if pin == end_stop_pin:
+                return True
+            raise Exception("%d not configured" % pin)
+        mock_gpio = mock.Mock(
+            spec=GpioBase, input_triggered=fake_input_triggered)
         stage = (
             StageBuilder()
-                .build_gpio(interface=MockGpio)
+                .build_gpio(interface=mock_gpio)
                 .build_coils(
                     a1_pin=26,
                     b1_pin=19,

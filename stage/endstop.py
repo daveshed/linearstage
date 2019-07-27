@@ -3,9 +3,9 @@ End stop for informing the stage when it has reached the end of its travel
 """
 from logging import getLogger
 
-from linearstage.gpio.base import GpioBase
+from stage.gpio import GpioBase
 
-_LOGGER = getLogger("end stop")
+_LOGGER = getLogger("END STOP")
 
 
 class EndStop:
@@ -14,7 +14,7 @@ class EndStop:
 
     Args:
         pin (int): the digital pin/channel that the stop is wired to
-        active_low (bool): designates the voltage level when the end stop is 
+        active_low (bool): designates the voltage level when the end stop is
             activated eg. active_low=True implies the signal is normally high
             (logic 0) and will go low when triggered (logic 1).
         gpio (GpioBase): the gpio interface object

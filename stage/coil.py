@@ -3,7 +3,7 @@ Abstraction for a the the stepper motors windings.
 """
 from collections import namedtuple
 
-from linearstage.gpio.base import GpioBase
+from stage.gpio import GpioBase
 
 _LABELS = ['a1', 'b1', 'a2', 'b2']
 State = namedtuple('State', _LABELS)

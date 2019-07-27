@@ -6,11 +6,11 @@ comprising stepper motor, track and end stop limit switch.
 import logging
 import threading
 
-from linearstage import coil
-from linearstage import error
-from linearstage import endstop
-from linearstage import motor
-from linearstage.gpio.base import GpioBase
+from stage import coil
+from stage import error
+from stage import endstop
+from stage import motor
+from stage.gpio import GpioBase
 
 _LOGGER = logging.getLogger("STAGE")
 

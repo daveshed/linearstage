@@ -8,10 +8,10 @@ from collections import namedtuple
 from time import sleep
 from logging import getLogger
 
-from linearstage import coil
-from linearstage.gpio.base import GpioBase
+from stage import coil
+from stage.gpio import GpioBase
 
-_LOGGER = getLogger("motor")
+_LOGGER = getLogger("MOTOR")
 
 
 class DriveScheme(abc.ABC):

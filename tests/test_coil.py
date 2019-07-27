@@ -1,8 +1,8 @@
 import unittest
 from unittest import mock
 
-from linearstage import coil
-from linearstage import gpio
+from stage import coil
+from stage import gpio
 
 
 class CoilTestGroup(unittest.TestCase):
@@ -10,7 +10,7 @@ class CoilTestGroup(unittest.TestCase):
     def setUp(self):
         self.expected_pin = 10
         self.expected_label = "a1"
-        self.mock_gpio = mock.Mock(name='gpio', spec=gpio.base.GpioBase)
+        self.mock_gpio = mock.Mock(name='gpio', spec=gpio.GpioBase)
         self.coil = coil.Coil(
             self.expected_label, self.expected_pin, self.mock_gpio)
 
