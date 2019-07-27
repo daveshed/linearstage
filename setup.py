@@ -3,5 +3,5 @@ setup(
     name="stage",
     version="1.0.0",
     packages=find_packages(),
-    install_requires=['RPi.GPIO'],
+    install_requires=[],
 )
