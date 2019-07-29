@@ -36,14 +36,14 @@ class OutputInterface(abc.ABC):
         return self._state
 
     @abc.abstractproperty
-    def set_high(self):
+    def activate(self):
         """
         Set the output high
         """
         return
 
     @abc.abstractproperty
-    def set_low(self):
+    def deactivate(self):
         """
         Set the output low
         """
