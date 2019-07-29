@@ -1,13 +1,16 @@
 import unittest
 from unittest import mock
 
+# FIX: Makefile must install requirements-dev.txt only for testing
 from stage import motor
+from stage import coil
+from gpio import mock as mockgpio
 
 
 class StepperMotorAttributeTestGroup(unittest.TestCase):
 
     def setUp(self):
-        self.fake_coils = mock.Mock(name='coils')
+        self.fake_coils = mock.Mock(spec=coil.Coils)
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,
             drive_scheme=motor.FullStepDriveScheme.name,
@@ -20,11 +23,34 @@ class StepperMotorAttributeTestGroup(unittest.TestCase):
         self.assertEqual(self.motor.drive_scheme, motor.FullStepDriveScheme.name)
 
 
+class CoilActivationTestGroup(unittest.TestCase):
+    FAKE_PINS = coil.Pins(1,2,3,4)
+
+    def setUp(self):
+        self.fake_coils = coil.Coils(
+            pins=self.FAKE_PINS, interface=mockgpio.OutputChannel, gpio=None)
+        self.motor = motor.UnipolarStepperMotor(
+            coils=self.fake_coils,
+            drive_scheme=motor.FullStepDriveScheme.name,
+            ms_delay=0)
+
+    def test_coils_deactivated_after_init(self):
+        for coil in self.fake_coils.coils:
+            self.assertFalse(coil.state)
+
+    def test_correct_pins_initialised_as_outputs(self):
+        for coil, pin in zip(self.fake_coils.coils, self.FAKE_PINS):
+            self.assertEqual(coil.pin, pin)
+
+
 class DriveSchemeTestMixin:
+    FAKE_PINS = coil.Pins(1,2,3,4)
     drive_scheme = None
 
     def setUp(self):
-        self.fake_coils = mock.Mock(name='coils')
+        # self.fake_coils = coil.Coils(
+        #     pins=self.FAKE_PINS, interface=mockgpio.OutputChannel, gpio=None)
+        self.fake_coils = mock.Mock(spec=coil.Coils)
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,
             drive_scheme=self.drive_scheme.name,
@@ -38,9 +64,7 @@ class DriveSchemeTestMixin:
     def test_backward_gpio_sequence(self):
         self.motor.backward(cycles=3)
         expect = [mock.call(state) for state
-            in reversed(self.drive_scheme.sequence)]
-        self.fake_coils.set_state.assert_has_calls(expect)
-        self.fake_coils.set_state.assert_has_calls(expect)
+            in reversed(self.drive_scheme.sequence)] * 3
         self.fake_coils.set_state.assert_has_calls(expect)
 
     def test_deactivate_turns_off_coils(self):

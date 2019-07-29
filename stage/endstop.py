@@ -3,7 +3,7 @@ End stop for informing the stage when it has reached the end of its travel
 """
 from logging import getLogger
 
-from stage.gpio import GpioBase
+from stage import iointerface
 
 _LOGGER = getLogger("END STOP")
 
@@ -22,19 +22,10 @@ class EndStop:
     # pylint: disable=too-few-public-methods
     def __init__(
             self,
-            pin: int,
-            active_low: bool,
-            gpio: GpioBase):
+            gpio: iointerface.InputInterface):
         self._gpio = gpio
-        self._pin = pin
         self._callbacks = []
-        self._gpio.initialise_input(
-            pin, active_low, event_callback=self._handle_triggered_event)
-        _LOGGER.info(
-            "Initialised end stop %r, pin %d, active-%s",
-            self,
-            pin,
-            "low" if active_low else "high")
+        _LOGGER.info("Initialised end stop %r, with %r", self, gpio)
 
     @property
     def pin(self):
@@ -54,9 +45,8 @@ class EndStop:
         Returns:
             bool: True if the end stop is triggered at this instant
         """
-        result = self._gpio.input_triggered(self._pin)
-        _LOGGER.debug("End stop %r triggered: %r", self, result)
-        return result
+        _LOGGER.debug("End stop %r triggered: %r", self, self._gpio.state)
+        return self._gpio.state
 
     def register_callback(self, callback):
         """

@@ -1,9 +1,6 @@
-"""
-Abstraction for a the the stepper motors windings.
-"""
 from collections import namedtuple
 
-from stage.gpio import GpioBase
+from stage import iointerface
 
 _LABELS = ['a1', 'b1', 'a2', 'b2']
 State = namedtuple('State', _LABELS)
@@ -11,74 +8,23 @@ Pins = namedtuple("Pins", _LABELS)
 
 
 class Coils:
-    def __init__(self, a1, b1, a2, b2):
-        self._coils = [a1, b1, a2, b2]
+    """
+    Manages the coils needed to run a stepper motor
+    """
+    def __init__(
+            self, pins: Pins, interface: iointerface.OutputInterface, gpio):
+        self._coils = [interface(pin, gpio) for pin in pins]
+        self._state = None
 
-    @classmethod
-    def from_pins(cls, pins: Pins, gpio: GpioBase):
-        coils = [Coil(label, pin, gpio) for label, pin in zip(_LABELS, pins)]
-        return cls(*coils)
+    @property
+    def coils(self):
+        return self._coils
 
     def deactivate(self):
         for coil in self._coils:
-            coil.off()
+            coil.deactivate()
 
     def set_state(self, state):
-        for coil in self._coils:
-            output = getattr(state, coil.label)
-            if output:
-                coil.on()
-            else:
-                coil.off()
-
-
-class Coil:
-    """
-    Drives a single coil within a stepper motor
-
-    Args:
-        label (str): the label associated with the pin - refers to datasheet
-        pin (int): the number of the gpio pin that activates the coil
-        gpio (GpioBase): the gpio object used to control the digital pin to
-            to which the winding is connected. It must implement the GpioBase
-            interface.
-    """
-    def __init__(self, label: str, pin: int, gpio: GpioBase):
-        self._gpio = gpio
-        self._gpio.initialise_output(pin)
-        self._pin = pin
-        self._label = label
-        self._active = False
-        self.off()
-
-    @property
-    def label(self):
-        """
-        The label of the pin
-        """
-        return self._label
-
-    @property
-    def active(self):
-        """
-        The state of the coil
-
-        Returns:
-            (bool): the state of the coil
-        """
-        return self._active
-
-    def on(self):
-        """
-        Energise the coil
-        """
-        # pylint: disable=invalid-name
-        self._gpio.set_high(self._pin)
-        self._active = True
-
-    def off(self):
-        """
-        De-energise the coil
-        """
-        self._gpio.set_low(self._pin)
-        self._active = False
+        self._state = state
+        for coil, output in zip(self._coils, state):
+            coil.activate() if output else coil.deactivate()

@@ -9,7 +9,6 @@ from time import sleep
 from logging import getLogger
 
 from stage import coil
-from stage.gpio import GpioBase
 
 _LOGGER = getLogger("MOTOR")
 
