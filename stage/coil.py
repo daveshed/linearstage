@@ -12,6 +12,7 @@ class Coils:
     Manages the coils needed to run a stepper motor
     """
     def __init__(
+        # FIX: interface is a class whereas gpio is the actual driver - inconsistent with endstop init
             self, pins: Pins, interface: iointerface.OutputInterface, gpio):
         self._coils = [interface(pin, gpio) for pin in pins]
         self._state = None

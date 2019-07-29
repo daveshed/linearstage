@@ -55,7 +55,7 @@ class EndStop:
         Args:
             callback (obj): the function to be registered
         """
-        self._callbacks.append(callback)
+        self._gpio.register_callback(callback)
 
     def deregister_callback(self, callback):
         """
@@ -64,7 +64,7 @@ class EndStop:
         Args:
             callback (obj): the function to be deregistered
         """
-        self._callbacks.remove(callback)
+        self._gpio.deregister_callback(callback)
 
     def _handle_triggered_event(self):
         for callback in self._callbacks:

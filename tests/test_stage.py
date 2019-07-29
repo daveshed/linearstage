@@ -4,37 +4,12 @@ from unittest import mock
 
 from stage import error
 from stage.stage import Stage
+from stage import endstop
+from gpio import mock as mockgpio
 
 LOGGER = logging.getLogger("MOCKS")
 MIN_STAGE_LIMIT = 0
 MAX_STAGE_LIMIT = 100
-
-
-class MockEndStop:
-
-    def __init__(self):
-        self._triggered = False
-        self._callbacks = []
-
-    @property
-    def triggered(self):
-        return self._triggered
-
-    def trigger(self):
-        # for tests only...
-        self._triggered = True
-        for callback in self._callbacks:
-            callback()
-
-    def reset(self):
-        # for tests only...
-        self._triggered = False
-
-    def register_callback(self, callback):
-        self._callbacks.append(callback)
-
-    def deregister_callback(self, callback):
-        self._callbacks.remove(callback)
 
 
 class MockMotor:
@@ -64,9 +39,9 @@ class FakeStageHardware:
     3) movement is bounded to limits and any movement outside of these limits
        will raise an exception
     """
-    def __init__(self, end_stop):
+    def __init__(self, end_stop_input):
         self._position = 0
-        self._end_stop = end_stop
+        self._input = end_stop_input
 
     @property
     def position(self):
@@ -77,19 +52,26 @@ class FakeStageHardware:
         if request > MAX_STAGE_LIMIT:
             raise AssertionError("Oh no. The motor has come off the track!")
         if request <= MIN_STAGE_LIMIT:
-            self._end_stop.trigger()
+            self._input.activate()
             self._position = 0
         else:
-            self._end_stop.reset()
+            self._input.deactivate()
             self._position = request
         LOGGER.info("position is %d", request)
 
 
 class TrackTests(unittest.TestCase):
+    ENDSTOP_PIN_IDX = 4
+
+    def create_mock_endstop(self):
+        return end_stop_inst
 
     def setUp(self):
-        self.mock_end_stop = MockEndStop()
-        self.mock_motor = MockMotor(FakeStageHardware(self.mock_end_stop))
+        self.input_inst = mockgpio.InputChannel(
+            pin=self.ENDSTOP_PIN_IDX, active_low=True, gpio=None)
+        self.mock_end_stop = endstop.EndStop(self.input_inst)
+        self.mock_motor = MockMotor(
+            FakeStageHardware(end_stop_input=self.input_inst))
         self.stage = Stage(
             motor=self.mock_motor,
             end_stop=self.mock_end_stop,
@@ -120,33 +102,3 @@ class TrackTests(unittest.TestCase):
         target_position = MIN_STAGE_LIMIT - 1
         with self.assertRaises(error.OutOfRangeError):
             self.stage.position = target_position
-
-
-# class BuilderTestGroup(unittest.TestCase):
-
-#     def test_stage_builder_can_instantiate(self):
-#         # MockGpio.triggered = True
-#         end_stop_pin = 22
-#         def fake_input_triggered(pin):
-#             nonlocal end_stop_pin
-#             if pin == end_stop_pin:
-#                 return True
-#             raise Exception("%d not configured" % pin)
-#         mock_gpio = mock.Mock(
-#             spec=GpioBase, input_triggered=fake_input_triggered)
-#         stage = (
-#             StageBuilder()
-#                 .build_gpio(interface=mock_gpio)
-#                 .build_coils(
-#                     a1_pin=26,
-#                     b1_pin=19,
-#                     a2_pin=13,
-#                     b2_pin=6)
-#                 .build_motor(drive_scheme='Half Step', ms_delay=10)
-#                 .build_end_stop(pin=22, active_low=True)
-#                 .build_track(
-#                     min_limit=MIN_STAGE_LIMIT, max_limit=MAX_STAGE_LIMIT)
-#                 .build_linear_stage()
-#                 .get_stage())
-#         self.assertEqual(stage.max, MAX_STAGE_LIMIT)
-#         # TODO: Other asserts eg stage.min

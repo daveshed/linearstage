@@ -10,55 +10,8 @@ from stage import coil
 from stage import error
 from stage import endstop
 from stage import motor
-# from stage.gpio import GpioBase
 
 _LOGGER = logging.getLogger("STAGE")
-
-
-# class StageBuilder:
-
-#     def __init__(self):
-#         self._coils = None
-#         self._motor = None
-#         self._end_stop = None
-#         self._min_limit = None
-#         self._max_limit = None
-#         self._stage = None
-#         self._gpio = None
-
-#     def build_gpio(self, interface: GpioBase):
-#         self._gpio = interface
-#         return self
-
-#     def build_coils(self, a1_pin, b1_pin, a2_pin, b2_pin):
-#         self._coils = coil.Coils.from_pins(
-#             coil.Pins(a1_pin, b1_pin, a2_pin, b2_pin), self._gpio)
-#         return self
-
-#     def build_motor(self, drive_scheme, ms_delay):
-#         self._motor = motor.UnipolarStepperMotor(
-#             self._coils, drive_scheme, ms_delay)
-#         return self
-
-#     def build_end_stop(self, pin, active_low):
-#         self._end_stop = endstop.EndStop(pin, active_low, self._gpio)
-#         return self
-
-#     def build_track(self, min_limit, max_limit):
-#         self._min_limit = min_limit
-#         self._max_limit = max_limit
-#         return self
-
-#     def build_linear_stage(self):
-#         self._stage = Stage(
-#             motor=self._motor,
-#             end_stop=self._end_stop,
-#             min_limit=self._min_limit,
-#             max_limit=self._max_limit)
-#         return self
-
-#     def get_stage(self):
-#         return self._stage
 
 
 class Stage:
@@ -75,7 +28,12 @@ class Stage:
     min_limit -- minimum stage position index
     max_limit -- maximum stage position index
     """
-    def __init__(self, motor, end_stop, min_limit, max_limit):
+    def __init__(
+            self,
+            motor,
+            end_stop: endstop.EndStop,
+            min_limit,
+            max_limit):
         _LOGGER.info("Instantiating stage")
         self.motor = motor
         self.end_stop = end_stop
