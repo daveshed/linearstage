@@ -3,7 +3,7 @@ End stop for informing the stage when it has reached the end of its travel
 """
 from logging import getLogger
 
-from stage import iointerface
+from stage.gpio import interface as iointerface
 
 _LOGGER = getLogger("END STOP")
 

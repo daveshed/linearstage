@@ -5,7 +5,7 @@ from unittest import mock
 from stage import error
 from stage.stage import Stage
 from stage import endstop
-from gpio import mock as mockgpio
+from stage.gpio import mock as mockgpio
 
 LOGGER = logging.getLogger("MOCKS")
 MIN_STAGE_LIMIT = 0

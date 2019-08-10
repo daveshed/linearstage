@@ -1,7 +1,6 @@
 import unittest
 from unittest import mock
 
-# FIX: Makefile must install requirements-dev.txt only for testing
 from stage import motor
 from stage import coil
 from stage.gpio import mock as mockgpio
@@ -27,8 +26,11 @@ class CoilActivationTestGroup(unittest.TestCase):
     FAKE_PINS = coil.Pins(1,2,3,4)
 
     def setUp(self):
-        self.fake_coils = coil.Coils(
-            pins=self.FAKE_PINS, interface=mockgpio.OutputChannel, gpio=None)
+        from stage.factory.factory import Factory
+        self.fake_coils = Factory.make_coils(
+            pins=self.FAKE_PINS,
+            interface_type=mockgpio.OutputChannel,
+            gpio=None)
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,
             drive_scheme=motor.FullStepDriveScheme.name,
@@ -44,12 +46,9 @@ class CoilActivationTestGroup(unittest.TestCase):
 
 
 class DriveSchemeTestMixin:
-    FAKE_PINS = coil.Pins(1,2,3,4)
     drive_scheme = None
 
     def setUp(self):
-        # self.fake_coils = coil.Coils(
-        #     pins=self.FAKE_PINS, interface=mockgpio.OutputChannel, gpio=None)
         self.fake_coils = mock.Mock(spec=coil.Coils)
         self.motor = motor.UnipolarStepperMotor(
             coils=self.fake_coils,

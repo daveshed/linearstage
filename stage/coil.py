@@ -11,21 +11,19 @@ class Coils:
     """
     Manages the coils needed to run a stepper motor
     """
-    def __init__(
-        # FIX: interface is a class whereas gpio is the actual driver - inconsistent with endstop init
-            self, pins: Pins, interface: iointerface.OutputInterface, gpio):
-        self._coils = [interface(pin, gpio) for pin in pins]
+    def __init__(self, *outputs):
         self._state = None
+        self._outputs = outputs
 
     @property
     def coils(self):
-        return self._coils
+        return self._outputs
 
     def deactivate(self):
-        for coil in self._coils:
-            coil.deactivate()
+        for output in self._outputs:
+            output.deactivate()
 
     def set_state(self, state):
         self._state = state
-        for coil, output in zip(self._coils, state):
-            coil.activate() if output else coil.deactivate()
+        for output, active in zip(self._coils, state):
+            output.activate() if active else output.deactivate()
