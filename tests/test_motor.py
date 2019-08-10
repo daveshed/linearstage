@@ -4,7 +4,7 @@ from unittest import mock
 # FIX: Makefile must install requirements-dev.txt only for testing
 from stage import motor
 from stage import coil
-from gpio import mock as mockgpio
+from stage.gpio import mock as mockgpio
 
 
 class StepperMotorAttributeTestGroup(unittest.TestCase):

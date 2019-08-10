@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from stage import iointerface
+from stage.gpio import interface as iointerface
 
 _LABELS = ['a1', 'b1', 'a2', 'b2']
 State = namedtuple('State', _LABELS)
