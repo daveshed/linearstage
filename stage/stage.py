@@ -6,10 +6,11 @@ comprising stepper motor, track and end stop limit switch.
 import logging
 import threading
 
-from stage import coil
-from stage import error
+from stage.motor import coil
+from stage import exceptions
 from stage import endstop
 from stage import motor
+from stage.factory.base import StageFactoryBase
 
 _LOGGER = logging.getLogger("STAGE")
 
@@ -22,24 +23,15 @@ class Stage:
     position.
 
     Keyword arguments:
-    motor -- a stepper motor instance used to drive the stage
-    end_stop -- an end stop instance to inform when the stage has reached its
-    home position.
-    min_limit -- minimum stage position index
-    max_limit -- maximum stage position index
+        factory ....
     """
-    def __init__(
-            self,
-            motor,
-            end_stop: endstop.EndStop,
-            min_limit,
-            max_limit):
-        _LOGGER.info("Instantiating stage")
-        self.motor = motor
-        self.end_stop = end_stop
+    def __init__(self, factory: StageFactoryBase):
+        _LOGGER.info("Instantiating stage using factory %r" % factory)
+        self.motor = factory.motor
+        self.end_stop = factory.end_stop
         self.end_stop.register_callback(self._handle_end_stop_triggered)
-        self._min = min_limit
-        self._max = max_limit
+        self._min = factory.minimum_position
+        self._max = factory.maximum_position
         self._at_home_position = threading.Event()
         # position is undefined at startup. Stage needs to home first.
         self._position = None
@@ -65,6 +57,13 @@ class Stage:
         """
         _LOGGER.info("Stage moving to end stop...")
         self.position = self._max
+
+    @property
+    def min(self):
+        """
+        Returns the minimum stage position index
+        """
+        return self._min
 
     @property
     def max(self):
@@ -101,7 +100,7 @@ class Stage:
 
     def _goto_request(self, request):
         if request > self._max or request < self._min:
-            raise error.OutOfRangeError("Cannot go to position %d" % request)
+            raise exceptions.OutOfRangeError("Cannot go to position %d" % request)
         delta = request - self._position
         if delta > 0:
             self.motor.forward(delta)

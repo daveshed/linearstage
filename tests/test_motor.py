@@ -1,8 +1,9 @@
 import unittest
 from unittest import mock
 
-from stage import motor
-from stage import coil
+from stage.motor import stepper
+from stage.motor import drive
+from stage.motor import coil
 from stage.gpio import mock as mockgpio
 
 
@@ -10,30 +11,27 @@ class StepperMotorAttributeTestGroup(unittest.TestCase):
 
     def setUp(self):
         self.fake_coils = mock.Mock(spec=coil.Coils)
-        self.motor = motor.UnipolarStepperMotor(
+        self.motor = stepper.UnipolarStepperMotor(
             coils=self.fake_coils,
-            drive_scheme=motor.FullStepDriveScheme.name,
+            drive_scheme=drive.FullStepDriveScheme.name,
             ms_delay=0)
 
     def test_ms_delay_set_on_init_can_be_retreived(self):
         self.assertEqual(self.motor.ms_delay, 0)
 
     def test_drive_scheme_set_on_init_can_be_retreived(self):
-        self.assertEqual(self.motor.drive_scheme, motor.FullStepDriveScheme.name)
+        self.assertEqual(self.motor.drive_scheme, drive.FullStepDriveScheme.name)
 
 
 class CoilActivationTestGroup(unittest.TestCase):
     FAKE_PINS = coil.Pins(1,2,3,4)
 
     def setUp(self):
-        from stage.factory.factory import Factory
-        self.fake_coils = Factory.make_coils(
-            pins=self.FAKE_PINS,
-            interface_type=mockgpio.OutputChannel,
-            gpio=None)
-        self.motor = motor.UnipolarStepperMotor(
+        self.fake_coils = coil.Coils(
+            *(mockgpio.OutputChannel(pin) for pin in type(self).FAKE_PINS))
+        self.motor = stepper.UnipolarStepperMotor(
             coils=self.fake_coils,
-            drive_scheme=motor.FullStepDriveScheme.name,
+            drive_scheme=drive.FullStepDriveScheme.name,
             ms_delay=0)
 
     def test_coils_deactivated_after_init(self):
@@ -50,7 +48,7 @@ class DriveSchemeTestMixin:
 
     def setUp(self):
         self.fake_coils = mock.Mock(spec=coil.Coils)
-        self.motor = motor.UnipolarStepperMotor(
+        self.motor = stepper.UnipolarStepperMotor(
             coils=self.fake_coils,
             drive_scheme=self.drive_scheme.name,
             ms_delay=0)
@@ -72,12 +70,12 @@ class DriveSchemeTestMixin:
 
 
 class FullStepDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
-    drive_scheme = motor.FullStepDriveScheme
+    drive_scheme = drive.FullStepDriveScheme
 
 
 class WaveDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
-    drive_scheme = motor.WaveDriveScheme
+    drive_scheme = drive.WaveDriveScheme
 
 
 class HalfStepDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
-    drive_scheme = motor.HalfStepDriveScheme
+    drive_scheme = drive.HalfStepDriveScheme

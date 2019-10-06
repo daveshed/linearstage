@@ -1,8 +1,9 @@
 """
 Mock concrete implementations of iointerface defined by the stage package
 """
-from stage.gpio import interface as iointerface
+from unittest import mock
 
+from stage.gpio import interface as iointerface
 from stage.gpio import error
 
 
@@ -10,6 +11,7 @@ class OutputChannel(iointerface.OutputInterface):
     """
     Mock concrete implementation of iointerface defined by the stage package
     """
+    _GPIO_DRIVER = None
 
     def activate(self):
         """
@@ -25,23 +27,30 @@ class OutputChannel(iointerface.OutputInterface):
         self._state = False
         return self.state
 
+    def gpio(self):
+        """
+        Returns the gpio driver
+        """
+        return type(self)._GPIO_DRIVER
+
 
 class InputChannel(iointerface.InputInterface):
     #pylint:disable=too-few-public-methods
     """
     Mock concrete implementation of iointerface defined by the stage package
     """
-    def __init__(self, pin: int, active_low: bool, gpio):
+    _GPIO_DRIVER = None
+
+    def __init__(self, pin: int, active_low: bool):
         """
-        Initialise the given pin as an input on the gpio instance supplied
+        Initialise the given pin as an input
 
         Args:
             pin (int): the physical pin to use
             active_low (bool): True if the input is active_low ie. a low input
                 is interpreted as logical True value
-            gpio (obj): the gpio driver instance
         """
-        super().__init__(pin, active_low, gpio)
+        super().__init__(pin, active_low)
         self._state = False
         self._pin = pin
         self._callbacks = []
@@ -97,3 +106,9 @@ class InputChannel(iointerface.InputInterface):
     def _invoke_callbacks(self):
         for callback in self._callbacks:
             callback()
+
+    def gpio(self):
+        """
+        Returns the gpio driver
+        """
+        return type(self)._GPIO_DRIVER

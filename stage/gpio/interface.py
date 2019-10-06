@@ -3,16 +3,14 @@ import abc
 
 class OutputInterface(abc.ABC):
 
-    def __init__(self, pin: int, gpio):
+    def __init__(self, pin: int):
         """
         Initialise the given pin as an output on the gpio instance supplied
 
         Args:
             pin (int): the physical pin to initialise
-            gpio (obj): the gpio driver instance
         """
         self._pin = pin
-        self._gpio = gpio
         self._state = None
 
     @property
@@ -49,23 +47,28 @@ class OutputInterface(abc.ABC):
         """
         return
 
+    @abc.abstractproperty
+    def gpio(self):
+        """
+        Returns the gpio driver
+        """
+        return
+
 
 class InputInterface(abc.ABC):
 
     @abc.abstractmethod
-    def __init__(self, pin: int, active_low: bool, gpio):
+    def __init__(self, pin: int, active_low: bool):
         """
-        Initialise the given pin as an input on the gpio instance supplied
+        Initialise the given pin as an input
 
         Args:
             pin (int): the physical pin to use
             active_low (bool): True if the input is active_low ie. a low input
                 is interpreted as logical True value
-            gpio (obj): the gpio driver instance
         """
         self._pin = pin
         self._active_low = active_low
-        self._gpio = gpio
         self._state = None
 
     @property
@@ -99,5 +102,12 @@ class InputInterface(abc.ABC):
     def deregister_callback(self, callback):
         """
         Deregister a callback that has already been registered
+        """
+        return
+
+    @abc.abstractproperty
+    def gpio(self):
+        """
+        Returns the gpio driver
         """
         return

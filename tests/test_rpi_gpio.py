@@ -2,31 +2,37 @@ import unittest
 from unittest import mock
 
 from stage.gpio import error
+#################### patch gpio module before import ###########################
+import sys
+MOCK_GPIO = mock.Mock()
+# This only seems to work in python 3.7
+sys.modules['RPi.GPIO'] = MOCK_GPIO
+################################################################################
 from stage.gpio import rpi
 
 
 class GpioOutputTestGroup(unittest.TestCase):
 
     def setUp(self):
-        self.mock_gpio = mock.Mock()
+        MOCK_GPIO.reset_mock()
         self.pin_idx = 1
-        self.output = rpi.OutputChannel(pin=self.pin_idx, gpio=self.mock_gpio)
+        self.output = rpi.OutputChannel(pin=self.pin_idx)
 
     def test_initialising_output_calls_setup_set_low(self):
-        self.mock_gpio.setup.assert_called_with(
-            self.pin_idx, self.mock_gpio.OUT)
+        MOCK_GPIO.setup.assert_called_with(
+            self.pin_idx, MOCK_GPIO.OUT)
         self.assertEqual(self.output.pin, self.pin_idx)
-        self.mock_gpio.output.assert_called_with(self.pin_idx, 0)
+        MOCK_GPIO.output.assert_called_with(self.pin_idx, 0)
         self.assertFalse(self.output.state)
 
     def test_set_high_calls_ouput(self):
         self.output.activate()
-        self.mock_gpio.output.assert_called_with(self.pin_idx, 1)
+        MOCK_GPIO.output.assert_called_with(self.pin_idx, 1)
         self.assertTrue(self.output.state)
 
     def test_set_low_calls_output(self):
         self.output.deactivate()
-        self.mock_gpio.output.assert_called_with(self.pin_idx, 0)
+        MOCK_GPIO.output.assert_called_with(self.pin_idx, 0)
         self.assertFalse(self.output.state)
 
 
@@ -68,41 +74,40 @@ class FakeEventCaptureMixin:
         if self.event_config.edge == "FALLING":
             self.event_config.callback(self.event_config.channel)
 
-    def create_mock_gpio(self):
-        mock_gpio = mock.Mock()
-        mock_gpio.add_event_detect.side_effect = self.fake_add_event_detect
-        mock_gpio.FALLING = "FALLING"
-        mock_gpio.RISING = "RISING"
-        return mock_gpio
+    def setup_mock_gpio(self):
+        MOCK_GPIO.reset_mock(side_effect=True)
+        MOCK_GPIO.add_event_detect.side_effect = self.fake_add_event_detect
+        MOCK_GPIO.FALLING = "FALLING"
+        MOCK_GPIO.RISING = "RISING"
 
 
 class GpioInputActiveLowTestGroup(unittest.TestCase, FakeEventCaptureMixin):
 
     def setUp(self):
-        self.mock_gpio = self.create_mock_gpio()
+        self.setup_mock_gpio()
         self.event_config = None
         self.pin_idx = 1
         self.active_low = True
         self.input = rpi.InputChannel(
-            pin=self.pin_idx, active_low=self.active_low, gpio=self.mock_gpio)
+            pin=self.pin_idx, active_low=self.active_low)
 
     def test_initialising_input_calls_setup(self):
-        self.mock_gpio.setup.assert_called_with(
-            self.pin_idx, self.mock_gpio.IN, self.mock_gpio.PUD_UP)
+        MOCK_GPIO.setup.assert_called_with(
+            self.pin_idx, MOCK_GPIO.IN, MOCK_GPIO.PUD_UP)
         self.assertEqual(
             self.event_config.bouncetime, rpi.InputChannel._DEBOUNCE_MS)
         self.assertEqual(
             self.event_config.edge, 'FALLING')
 
     def test_retreiving_state_reads_gpio_high_signal_returns_false(self):
-        self.mock_gpio.input.return_value = 1
+        MOCK_GPIO.input.return_value = 1
         self.assertFalse(self.input.state)
-        self.mock_gpio.input.assert_called()
+        MOCK_GPIO.input.assert_called()
 
     def test_retreiving_state_reads_gpio_low_signal_returns_true(self):
-        self.mock_gpio.input.return_value = 0
+        MOCK_GPIO.input.return_value = 0
         self.assertTrue(self.input.state)
-        self.mock_gpio.input.assert_called()
+        MOCK_GPIO.input.assert_called()
 
     def test_input_activated_invokes_callbacks(self):
         foo = mock.Mock()
@@ -118,27 +123,27 @@ class GpioInputActiveLowTestGroup(unittest.TestCase, FakeEventCaptureMixin):
 class GpioInputActiveHighTestGroup(unittest.TestCase, FakeEventCaptureMixin):
 
     def setUp(self):
-        self.mock_gpio = self.create_mock_gpio()
+        self.setup_mock_gpio()
         self.pin_idx = 1
         self.active_low = False
         self.input = rpi.InputChannel(
-            pin=self.pin_idx, active_low=self.active_low, gpio=self.mock_gpio)
+            pin=self.pin_idx, active_low=self.active_low)
 
     def test_initialising_input_calls_setup(self):
-        self.mock_gpio.setup.assert_called_with(
-            self.pin_idx, self.mock_gpio.IN, self.mock_gpio.PUD_DOWN)
+        MOCK_GPIO.setup.assert_called_with(
+            self.pin_idx, MOCK_GPIO.IN, MOCK_GPIO.PUD_DOWN)
         self.assertEqual(
             self.event_config.edge, 'RISING')
 
     def test_retreiving_state_reads_gpio_high_signal_returns_true(self):
-        self.mock_gpio.input.return_value = 1
+        MOCK_GPIO.input.return_value = 1
         self.assertTrue(self.input.state)
-        self.mock_gpio.input.assert_called()
+        MOCK_GPIO.input.assert_called()
 
     def test_retreiving_state_reads_gpio_low_signal_returns_false(self):
-        self.mock_gpio.input.return_value = 0
+        MOCK_GPIO.input.return_value = 0
         self.assertFalse(self.input.state)
-        self.mock_gpio.input.assert_called()
+        MOCK_GPIO.input.assert_called()
 
     def test_input_activated_invokes_callbacks(self):
         foo = mock.Mock()

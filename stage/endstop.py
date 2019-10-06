@@ -3,7 +3,7 @@ End stop for informing the stage when it has reached the end of its travel
 """
 from logging import getLogger
 
-from stage.gpio import interface as iointerface
+from stage.gpio.interface import InputInterface
 
 _LOGGER = getLogger("END STOP")
 
@@ -17,25 +17,25 @@ class EndStop:
         active_low (bool): designates the voltage level when the end stop is
             activated eg. active_low=True implies the signal is normally high
             (logic 0) and will go low when triggered (logic 1).
-        gpio (GpioBase): the gpio interface object
+        digital_input (InputInterface): the input interface object
     """
     # pylint: disable=too-few-public-methods
     def __init__(
             self,
-            gpio: iointerface.InputInterface):
-        self._gpio = gpio
+            digital_io: InputInterface):
+        self._input = digital_io
         self._callbacks = []
-        _LOGGER.info("Initialised end stop %r, with %r", self, gpio)
+        _LOGGER.info("Initialised end stop %r, with %r", self, self._input)
 
     @property
-    def pin(self):
+    def input(self):
         """
-        The pin with which the end stop is registered
+        The digital input used by the end stop switch
 
         Returns:
             int: the pin index
         """
-        return self._pin
+        return self._input
 
     @property
     def triggered(self):
@@ -45,8 +45,8 @@ class EndStop:
         Returns:
             bool: True if the end stop is triggered at this instant
         """
-        _LOGGER.debug("End stop %r triggered: %r", self, self._gpio.state)
-        return self._gpio.state
+        _LOGGER.debug("End stop %r triggered: %r", self, self._input.state)
+        return self._input.state
 
     def register_callback(self, callback):
         """
@@ -55,7 +55,7 @@ class EndStop:
         Args:
             callback (obj): the function to be registered
         """
-        self._gpio.register_callback(callback)
+        self._input.register_callback(callback)
 
     def deregister_callback(self, callback):
         """
@@ -64,7 +64,7 @@ class EndStop:
         Args:
             callback (obj): the function to be deregistered
         """
-        self._gpio.deregister_callback(callback)
+        self._input.deregister_callback(callback)
 
     def _handle_triggered_event(self):
         for callback in self._callbacks:

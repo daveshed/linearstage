@@ -1,77 +1,17 @@
-"""
-Software driver for a stepper motor. code originally inspired by ...
-https://github.com/christophrumpel/test_stepper
-https://tutorials-raspberrypi.com/how-to-control-a-stepper-motor-with-raspberry-pi-and-l293d-uln2003a/
-"""
-import abc
-from collections import namedtuple
-from time import sleep
 from logging import getLogger
+from time import sleep
 
-from stage import coil
+from stage.motor import coil
+from stage.motor import drive
 
 _LOGGER = getLogger("MOTOR")
-
-
-class DriveScheme(abc.ABC):
-    """
-    https://en.wikipedia.org/wiki/Stepper_motor#/media/File:Drive.png
-    """
-    @abc.abstractproperty
-    def name(self):
-        return
-
-    @abc.abstractproperty
-    def sequence(self):
-        return
-
-
-class FullStepDriveScheme(DriveScheme):
-    name = "Full Step"
-    sequence = [
-        coil.State(1, 0, 0, 1),
-        coil.State(1, 0, 0, 1),
-        coil.State(1, 1, 0, 0),
-        coil.State(1, 1, 0, 0),
-        coil.State(0, 1, 1, 0),
-        coil.State(0, 1, 1, 0),
-        coil.State(0, 0, 1, 1),
-        coil.State(0, 0, 1, 1),
-    ]
-
-
-class WaveDriveScheme(DriveScheme):
-    name = "Wave"
-    sequence = [
-        coil.State(1, 0, 0, 0),
-        coil.State(1, 0, 0, 0),
-        coil.State(0, 1, 0, 0),
-        coil.State(0, 1, 0, 0),
-        coil.State(0, 0, 1, 0),
-        coil.State(0, 0, 1, 0),
-        coil.State(0, 0, 0, 1),
-        coil.State(0, 0, 0, 1),
-    ]
-
-
-class HalfStepDriveScheme(DriveScheme):
-    name = "Half Step"
-    sequence = [
-        coil.State(1, 0, 0, 1),
-        coil.State(1, 0, 0, 0),
-        coil.State(1, 1, 0, 0),
-        coil.State(0, 1, 0, 0),
-        coil.State(0, 1, 1, 0),
-        coil.State(0, 0, 1, 0),
-        coil.State(0, 0, 1, 1),
-        coil.State(0, 0, 0, 1),
-    ]
 
 
 class UnipolarStepperMotor:
     _MS_DELAY = 20
     AVAILABLE_DRIVE_SCHEMES = {
-        scheme.name: scheme for scheme in DriveScheme.__subclasses__()}
+        scheme.name: scheme for scheme
+        in drive.DriveScheme.__subclasses__()}
     """
     Drives a unipolar stepper motor
 
@@ -91,7 +31,7 @@ class UnipolarStepperMotor:
     def __init__(
             self,
             coils: coil.Coils,
-            drive_scheme: str=HalfStepDriveScheme.name,
+            drive_scheme: str=drive.HalfStepDriveScheme.name,
             ms_delay: int=None):
         self._coils = coils
         self._delay = ms_delay if ms_delay is not None else self._MS_DELAY

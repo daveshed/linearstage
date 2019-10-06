@@ -8,12 +8,12 @@ from stage.gpio import mock as mockgpio
 class MockGpioOutputTestGroup(unittest.TestCase):
 
     def test_set_init_into_low_state(self):
-        self.output = mockgpio.OutputChannel(1, mock.Mock())
+        self.output = mockgpio.OutputChannel(1)
         self.assertFalse(self.output.state)
         self.assertEqual(self.output.pin, 1)
 
     def test_set_high_low_changes_state(self):
-        self.output = mockgpio.OutputChannel(1, mock.Mock())
+        self.output = mockgpio.OutputChannel(1)
         self.output.activate()
         self.assertTrue(self.output.state)
         self.output.deactivate()
@@ -24,7 +24,7 @@ class MockGpioInputTestGroup(unittest.TestCase):
 
     def setUp(self):
         self.pin_idx = 1
-        self.input = mockgpio.InputChannel(self.pin_idx, True, mock.Mock())
+        self.input = mockgpio.InputChannel(self.pin_idx, True)
 
     def test_retreive_pin_after_init(self):
         self.assertEqual(self.input.pin, self.pin_idx)

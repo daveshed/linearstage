@@ -2,6 +2,8 @@
 io interface concretions of the stage iointerface that apply to the RPi.GPIO
 library.
 """
+import RPi.GPIO as RPIGPIO
+
 from stage.gpio import interface as iointerface
 from stage.gpio import error
 
@@ -10,7 +12,9 @@ class OutputChannel(iointerface.OutputInterface):
     """
     Concrete implementation of the OutputInterface abstraction
     """
-    def __init__(self, pin: int, gpio):
+    _GPIO_DRIVER = RPIGPIO
+
+    def __init__(self, pin: int):
         """
         Initialise the given pin as an output on the gpio instance supplied
 
@@ -18,23 +22,27 @@ class OutputChannel(iointerface.OutputInterface):
             pin (int): the physical pin to initialise
             gpio (RPi.GPIO): the raspberry pi gpio driver instance
         """
-        super().__init__(pin, gpio)
-        gpio.setup(pin, gpio.OUT)
+        super().__init__(pin)
+        self.gpio.setup(pin, self.gpio.OUT)
         self.deactivate()
 
     def activate(self):
         """
         Set the output high
         """
-        self._gpio.output(self._pin, 1)
+        type(self)._GPIO_DRIVER.output(self._pin, 1)
         self._state = True
 
     def deactivate(self):
         """
         Set the output low
         """
-        self._gpio.output(self._pin, 0)
+        type(self)._GPIO_DRIVER.output(self._pin, 0)
         self._state = False
+
+    @property
+    def gpio(self):
+        return type(self)._GPIO_DRIVER
 
 
 class InputChannel(iointerface.InputInterface):
@@ -42,6 +50,7 @@ class InputChannel(iointerface.InputInterface):
     Concrete implementation of the InputInterface abstraction
     """
     _DEBOUNCE_MS = 200
+    _GPIO_DRIVER = RPIGPIO
 
     class CallbackManager:
         #pylint:disable=too-few-public-methods
@@ -55,7 +64,7 @@ class InputChannel(iointerface.InputInterface):
             for callback in self.callbacks:
                 callback(args, kwargs)
 
-    def __init__(self, pin: int, active_low: bool, gpio):
+    def __init__(self, pin: int, active_low: bool):
         """
         Initialise the given pin as an input on the gpio instance supplied
 
@@ -63,17 +72,18 @@ class InputChannel(iointerface.InputInterface):
             pin (int): the physical pin to use
             active_low (bool): True if the input is active_low ie. a low input
                 is interpreted as logical True value
-            gpio (obj): the gpio driver instance
         """
-        super().__init__(pin, active_low, gpio)
-        self._callback_manager = InputChannel.CallbackManager()
-        self._gpio.setup(
-            pin, gpio.IN, gpio.PUD_UP if active_low else gpio.PUD_DOWN)
-        self._gpio.add_event_detect(
+        super().__init__(pin, active_low)
+        self._callback_manager = type(self).CallbackManager()
+        self.gpio.setup(
             pin,
-            gpio.FALLING if active_low else gpio.RISING,
+            self.gpio.IN,
+            self.gpio.PUD_UP if active_low else self.gpio.PUD_DOWN)
+        self.gpio.add_event_detect(
+            pin,
+            self.gpio.FALLING if active_low else self.gpio.RISING,
             callback=self._callback_manager,
-            bouncetime=InputChannel._DEBOUNCE_MS)
+            bouncetime=type(self)._DEBOUNCE_MS)
 
     @property
     def state(self):
@@ -84,7 +94,7 @@ class InputChannel(iointerface.InputInterface):
             bool: True if the input is recieving a logical high value at the
                 present moment
         """
-        signal = bool(self._gpio.input(self._pin))
+        signal = bool(self.gpio.input(self._pin))
         logic_level = not signal if self._active_low else signal
         return logic_level
 
@@ -103,3 +113,7 @@ class InputChannel(iointerface.InputInterface):
         except ValueError:
             raise error.GpioError(
                 "Cannot deregister %r. Not registered" % callback)
+
+    @property
+    def gpio(self):
+        return type(self)._GPIO_DRIVER
