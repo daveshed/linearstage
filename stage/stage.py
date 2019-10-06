@@ -2,14 +2,10 @@
 The linear stage module that defines a software driver of a hardware assembly
 comprising stepper motor, track and end stop limit switch.
 """
-
 import logging
 import threading
 
-from stage.motor import coil
 from stage import exceptions
-from stage import endstop
-from stage import motor
 from stage.factory.base import StageFactoryBase
 
 _LOGGER = logging.getLogger("STAGE")
@@ -23,10 +19,10 @@ class Stage:
     position.
 
     Keyword arguments:
-        factory ....
+        factory (StageFactoryBase): a factory that creates stage components
     """
     def __init__(self, factory: StageFactoryBase):
-        _LOGGER.info("Instantiating stage using factory %r" % factory)
+        _LOGGER.info("Instantiating stage using factory %r", factory)
         self.motor = factory.motor
         self.end_stop = factory.end_stop
         self.end_stop.register_callback(self._handle_end_stop_triggered)
@@ -42,7 +38,7 @@ class Stage:
         Send the stage to its home position
         """
         _LOGGER.info("Homing stage...")
-        # TODO: timeout needed here. what if the stage is stuck or endstop
+        # FIX: timeout needed here. what if the stage is stuck or endstop
         # broken
         if not self.end_stop.triggered:
             while not self._at_home_position.is_set():

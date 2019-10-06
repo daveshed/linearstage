@@ -1,8 +1,6 @@
 """
 Mock concrete implementations of iointerface defined by the stage package
 """
-from unittest import mock
-
 from stage.gpio import interface as iointerface
 from stage.gpio import error
 

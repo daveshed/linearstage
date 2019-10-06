@@ -3,29 +3,31 @@ Entry point for the stage application that allows a user to set the stage
 position index from the command line.
 """
 import logging
+import sys
 
-from linearstage.stage import StageBuilder
-from linearstage.gpio.rpi import RPiGpio
+from stage.stage import Stage
+from stage.factory.config import Configurator
+from stage.factory.rpi import RPiMonopolarStepperStageFactory
+
 
 logging.basicConfig(
     format='%(asctime)s[%(name)s]:%(levelname)s:%(message)s',
-    stream=stdout,
+    stream=sys.stdout,
     level=logging.INFO)
 
-LOGGER = getLogger("linearstage")
-STAGE = (
-    StageBuilder()
-        .build_gpio(RPiGpio)
-        .build_coils(
-            a1_pin=26, # orange
-            b1_pin=19, # yellow
-            a2_pin=13, # pink
-            b2_pin=6)  # blue
-        .build_motor(drive_scheme='Half Step', ms_delay=10)
-        .build_end_stop(pin=22, active_low=True)
-        .build_track(min_limit=0, max_limit=4400)
-        .build_linear_stage()
-        .get_stage())
+LOGGER = logging.getLogger("linearstage")
+CONFIG = Configurator(
+    motor_pins=(
+        26, # a1 orange
+        19, # b1 yellow
+        13, # a2 pink
+        6,  # b2 blue
+    ),
+    end_stop_pin=22,
+    end_stop_active_low=True,
+    maximum_position=4400,
+    minimum_position=0)
+STAGE = Stage(RPiMonopolarStepperStageFactory(CONFIG))
 
 while True:
     try:

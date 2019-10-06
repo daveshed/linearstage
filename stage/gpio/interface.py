@@ -1,15 +1,18 @@
+"""
+I/O interface definitions required by the stage package. These classes serve
+as abstractions so that different concrete I/O adaptors can be implemented.
+"""
 import abc
 
 
 class OutputInterface(abc.ABC):
+    """
+    Initialise the given pin as an output on the gpio instance supplied
 
+    Args:
+        pin (int): the physical pin to initialise
+    """
     def __init__(self, pin: int):
-        """
-        Initialise the given pin as an output on the gpio instance supplied
-
-        Args:
-            pin (int): the physical pin to initialise
-        """
         self._pin = pin
         self._state = None
 
@@ -56,17 +59,16 @@ class OutputInterface(abc.ABC):
 
 
 class InputInterface(abc.ABC):
+    """
+    Initialise the given pin as an input
 
+    Args:
+        pin (int): the physical pin to use
+        active_low (bool): True if the input is active_low ie. a low input
+            is interpreted as logical True value
+    """
     @abc.abstractmethod
     def __init__(self, pin: int, active_low: bool):
-        """
-        Initialise the given pin as an input
-
-        Args:
-            pin (int): the physical pin to use
-            active_low (bool): True if the input is active_low ie. a low input
-                is interpreted as logical True value
-        """
         self._pin = pin
         self._active_low = active_low
         self._state = None

@@ -10,11 +10,11 @@ from stage.factory.mock import FakeTrackHardware, MockStageFactory
 from stage.factory.config import Configurator
 
 
+
 class TrackTests(unittest.TestCase):
     ENDSTOP_PIN_IDX = 4
-
-    def create_mock_endstop(self):
-        return end_stop_inst
+    MAXIMUM_IDX = MockStageFactory.MAX_STAGE_LIMIT
+    MINIMUM_IDX = MockStageFactory.MIN_STAGE_LIMIT
 
     def position_from_percent(self, percent):
         # calculate the position as a percentage of allowed travel
@@ -23,14 +23,18 @@ class TrackTests(unittest.TestCase):
 
     def setUp(self):
         config = Configurator(
+            maximum_position=self.MAXIMUM_IDX,
+            minimum_position=self.MINIMUM_IDX,
             motor_pins=None,
             end_stop_pin=None,
             end_stop_active_low=True)
         self.factory = MockStageFactory(config)
         self.stage = Stage(self.factory)
         self.mock_end_stop = self.factory.end_stop
-        self.stage.motor.fake_track_hardware = \
-            FakeTrackHardware(self.mock_end_stop)
+
+    def test_position_limits_configured(self):
+        self.assertEqual(self.stage.max, self.MAXIMUM_IDX)
+        self.assertEqual(self.stage.min, self.MINIMUM_IDX)
 
     def test_home_resets_position(self):
         self.stage.position = self.position_from_percent(50)

@@ -1,27 +1,53 @@
-from stage import exceptions
+#pylint: disable=missing-docstring
+#pylint: enable=missing-docstring
+from stage.endstop import EndStop
 from stage.factory.base import StageFactoryBase
+from stage.factory.config import Configurator
+from stage.gpio import rpi
+from stage.motor.coil import Coils
+from stage.motor.stepper import UnipolarStepperMotor
 
 
 class RPiMonopolarStepperStageFactory(StageFactoryBase):
+    """
+    A factory that creates motor and end stop required to instantiate a stage
+
+    Args:
+        config (Configurator): config object that holds all specific parameters
+            needed to configure the stage factory
+    """
     _DIGITAL_INPUT = rpi.InputChannel
     _DIGITAL_OUTPUT = rpi.OutputChannel
 
-    def __init__(self, config):
-        self._motor = self._create_motor(config)
+    def __init__(self, config: Configurator):
+        self._config = config
+        self._motor = self._create_motor()
+        self._end_stop = self._create_end_stop()
 
-    @staticmethod
-    def _create_motor(config):
-        coils = Coils(*(type(self)_DIGITAL_OUTPUT(pin) for pin in config.motor_pins))
-        return UnipolarStepperMotor(coils)
+    @property
+    def maximum_position(self):
+        return self._config.maximum_position
 
-    def set_motor_pins(self, a1, b1, a2, b2):
-        self._motor_pins = Pins(a1, b1, a2, b2)
+    @property
+    def minimum_position(self):
+        return self._config.minimum_position
 
-    def get_motor(self):
+    @property
+    def motor(self):
         return self._motor
 
-    def get_end_stop(self):
+    @property
+    def end_stop(self):
+        return self._end_stop
+
+    def _create_end_stop(self):
         return EndStop(
             type(self)._DIGITAL_INPUT(
-                cls.get_end_stop_pin(),
-                cls.get_end_stop_active_low()))
+                self._config.end_stop_pin,
+                self._config.end_stop_active_low))
+
+    def _create_motor(self):
+        coils = Coils(
+            *(type(self)._DIGITAL_OUTPUT(pin)
+              for pin in self._config.motor_pins))
+        return UnipolarStepperMotor(coils)
