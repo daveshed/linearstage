@@ -90,8 +90,8 @@ class Stage:
         self._at_home_position.clear()
         _LOGGER.info("Done")
 
-    def _handle_end_stop_triggered(self):
-        _LOGGER.info("End stop triggered")
+    def _handle_end_stop_triggered(self, *args, **kwargs):
+        _LOGGER.info("End stop triggered: args=%r; kwargs=%r", args, kwargs)
         self._at_home_position.set()
 
     def _goto_request(self, request):

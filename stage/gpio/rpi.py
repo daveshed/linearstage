@@ -2,17 +2,19 @@
 io interface concretions of the stage iointerface that apply to the RPi.GPIO
 library.
 """
-import RPi.GPIO as RPIGPIO
+import RPi.GPIO as RPI_GPIO
 
 from stage.gpio import interface as iointerface
 from stage.gpio import error
+
+RPI_GPIO.setmode(RPI_GPIO.BCM)
 
 
 class OutputChannel(iointerface.OutputInterface):
     """
     Concrete implementation of the OutputInterface abstraction
     """
-    _GPIO_DRIVER = RPIGPIO
+    _GPIO_DRIVER = RPI_GPIO
 
     def __init__(self, pin: int):
         """
@@ -30,14 +32,14 @@ class OutputChannel(iointerface.OutputInterface):
         """
         Set the output high
         """
-        type(self)._GPIO_DRIVER.output(self._pin, 1)
+        self.gpio.output(self._pin, 1)
         self._state = True
 
     def deactivate(self):
         """
         Set the output low
         """
-        type(self)._GPIO_DRIVER.output(self._pin, 0)
+        self.gpio.output(self._pin, 0)
         self._state = False
 
     @property
@@ -50,7 +52,7 @@ class InputChannel(iointerface.InputInterface):
     Concrete implementation of the InputInterface abstraction
     """
     _DEBOUNCE_MS = 200
-    _GPIO_DRIVER = RPIGPIO
+    _GPIO_DRIVER = RPI_GPIO
 
     class CallbackManager:
         #pylint:disable=too-few-public-methods

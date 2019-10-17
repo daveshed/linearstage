@@ -25,5 +25,5 @@ class Coils:
 
     def set_state(self, state):
         self._state = state
-        for output, active in zip(self._coils, state):
+        for output, active in zip(self.coils, state):
             output.activate() if active else output.deactivate()
