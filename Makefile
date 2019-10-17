@@ -1,6 +1,11 @@
 PROJECT_TEST_DIR:=tests
 PROJECT_NAME:=stage
 
+.PHONY: clean
+clean:
+	echo "CLEANING..."
+	rm -rf build dist
+
 .PHONY: install-requirements
 install-requirements:
 	echo "INSTALLING REQUIREMENTS..."
