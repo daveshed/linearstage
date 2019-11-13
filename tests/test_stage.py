@@ -1,111 +1,62 @@
 import logging
 import unittest
-from unittest.mock import Mock
-#################### patch gpio module before import ###########################
-import sys
-mock_gpio = Mock()
-mock_time = Mock()
-# This only seems to work in python 3.7
-sys.modules['RPi.GPIO'] = mock_gpio
-################################################################################
-from stage import error
-from stage.config import STAGE_CONFIG, setup_logger
+from unittest import mock
+
+from stage import exceptions
 from stage.stage import Stage
+from stage import endstop
+from stage.gpio import mock as mockgpio
+from stage.factory.mock import FakeTrackHardware, MockStageFactory
+from stage.factory.config import Configurator
 
-setup_logger()
-logger = logging.getLogger("test_stage")
-
-MIN_STAGE_LIMIT = STAGE_CONFIG['min_limit']
-MAX_STAGE_LIMIT = STAGE_CONFIG['max_limit']
-
-class MockEndStop:
-
-    def __init__(self):
-        self._triggered = False
-
-    @property
-    def triggered(self):
-        return self._triggered
-
-    @triggered.setter
-    def triggered(self, state):
-        self._triggered = state
-        logger.info("end stop set to {}".format(state))
-
-
-class MockMotor:
-
-    def __init__(self, observer):
-        self.deactivated = False
-        self._observer = observer
-
-    def forward(self, steps):
-        logger.info("Mock motor forward {} steps".format(steps))
-        self._observer.position += steps
-
-    def backward(self, steps):
-        logger.info("Mock motor backward {} steps".format(steps))
-        self._observer.position -= steps
-
-    def deactivate(self):
-        self.deactivated = True
-
-class FakeTrackHardware:
-    """
-    A simulation of the stage hardware. This holds the actual position of the
-    stage and rules that govern its movement:
-    1) end stop is triggered when the stage reaches its limit
-    2) end stop is not triggered when the stage is within bounds
-    3) movement is bounded to limits and any movement outside of these limits
-       will raise an exception
-    """
-    def __init__(self, end_stop, position=0):
-        self._position = position
-        self._end_stop = end_stop
-
-    @property
-    def position(self):
-        return self._position
-
-    @position.setter
-    def position(self, request):
-        if request >= MIN_STAGE_LIMIT:
-            self._end_stop.triggered = True
-        self._position = request
-        logger.info("position is {}".format(request))
 
 
 class TrackTests(unittest.TestCase):
+    ENDSTOP_PIN_IDX = 4
+    MAXIMUM_IDX = MockStageFactory.MAX_STAGE_LIMIT
+    MINIMUM_IDX = MockStageFactory.MIN_STAGE_LIMIT
+
+    def position_from_percent(self, percent):
+        # calculate the position as a percentage of allowed travel
+        return (self.stage.max - self.stage.min) \
+            * (percent / 100) + self.stage.min
 
     def setUp(self):
-        self.mock_end_stop = MockEndStop()
-        self.mock_motor = MockMotor(
-            observer=FakeTrackHardware(
-                end_stop=self.mock_end_stop,
-                position=23))
-        self.stage = Stage(
-            self.mock_motor,
-            self.mock_end_stop,
-            MIN_STAGE_LIMIT,
-            MAX_STAGE_LIMIT
-        )
+        config = Configurator(
+            maximum_position=self.MAXIMUM_IDX,
+            minimum_position=self.MINIMUM_IDX,
+            motor_pins=None,
+            end_stop_pin=None,
+            end_stop_active_low=True)
+        self.factory = MockStageFactory(config)
+        self.stage = Stage(self.factory)
+        self.mock_end_stop = self.factory.end_stop
+
+    def test_position_limits_configured(self):
+        self.assertEqual(self.stage.max, self.MAXIMUM_IDX)
+        self.assertEqual(self.stage.min, self.MINIMUM_IDX)
 
     def test_home_resets_position(self):
-        self.assertEqual(0, self.stage.position)
+        self.stage.position = self.position_from_percent(50)
+        self.stage.home()
+        self.assertEqual(self.stage.min, self.stage.position)
+        self.assertTrue(self.mock_end_stop.triggered)
 
     def test_end_moves_stage_to_max_position(self):
         self.stage.end()
-        self.assertEqual(MAX_STAGE_LIMIT - MIN_STAGE_LIMIT, self.stage.position)
+        self.assertFalse(self.mock_end_stop.triggered)
+        self.assertEqual(self.stage.position, self.stage.max)
 
     def test_position_within_bounds_updates_position_ok(self):
-        target_position = 10
+        target_position = self.position_from_percent(10)
         self.stage.position = target_position
         self.assertEqual(target_position, self.stage.position)
+        self.assertFalse(self.mock_end_stop.triggered)
 
     def test_request_out_of_range_raises_assert(self):
-        target_position = MAX_STAGE_LIMIT + 1
-        with self.assertRaises(error.OutOfRangeError):
+        target_position = self.stage.max + 1
+        with self.assertRaises(exceptions.OutOfRangeError):
             self.stage.position = target_position
-        target_position = MIN_STAGE_LIMIT - 1
-        with self.assertRaises(error.OutOfRangeError):
+        target_position = self.stage.min - 1
+        with self.assertRaises(exceptions.OutOfRangeError):
             self.stage.position = target_position

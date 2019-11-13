@@ -2,13 +2,11 @@
 The linear stage module that defines a software driver of a hardware assembly
 comprising stepper motor, track and end stop limit switch.
 """
-
 import logging
-from time import sleep
+import threading
 
-from stage import error
-from stage.endstop import EndStop
-from stage.motor import Motor
+from stage import exceptions
+from stage.factory.base import StageFactoryBase
 
 _LOGGER = logging.getLogger("STAGE")
 
@@ -21,45 +19,30 @@ class Stage:
     position.
 
     Keyword arguments:
-    motor -- a stepper motor instance used to drive the stage
-    end_stop -- an end stop instance to inform when the stage has reached its
-    home position.
-    min_limit -- minimum stage position index
-    max_limit -- maximum stage position index
+        factory (StageFactoryBase): a factory that creates stage components
     """
-    def __init__(self, motor, end_stop, min_limit, max_limit):
-        _LOGGER.info("Instantiating stage")
-        self.motor = motor
-        self.end_stop = end_stop
-        self._min = min_limit
-        self._max = max_limit
+    def __init__(self, factory: StageFactoryBase):
+        _LOGGER.info("Instantiating stage using factory %r", factory)
+        self.motor = factory.motor
+        self.end_stop = factory.end_stop
+        self.end_stop.register_callback(self._handle_end_stop_triggered)
+        self._min = factory.minimum_position
+        self._max = factory.maximum_position
+        self._at_home_position = threading.Event()
         # position is undefined at startup. Stage needs to home first.
         self._position = None
         self.home()
-
-    @classmethod
-    def from_config(cls, config: dict):
-        """
-        Returns Stage instance instance from a config dictionary
-
-        Keyword arguments:
-        config -- a dictionary that defines the stage's configuration parameters
-        """
-        motor = Motor.from_config(config['motor'])
-        end_stop = EndStop(
-            config['end_stop']['pin'],
-            config['end_stop']['normally_high']
-        )
-        return cls(motor, end_stop, config['min_limit'], config['max_limit'])
 
     def home(self):
         """
         Send the stage to its home position
         """
         _LOGGER.info("Homing stage...")
-        while not self.end_stop.triggered:
-            self.motor.backward(1)
-            sleep(0.01)
+        # FIX: timeout needed here. what if the stage is stuck or endstop
+        # broken
+        if not self.end_stop.triggered:
+            while not self._at_home_position.is_set():
+                self.motor.backward(1)
         _LOGGER.info("Done")
         self._position = 0
         self.motor.deactivate()
@@ -70,6 +53,13 @@ class Stage:
         """
         _LOGGER.info("Stage moving to end stop...")
         self.position = self._max
+
+    @property
+    def min(self):
+        """
+        Returns the minimum stage position index
+        """
+        return self._min
 
     @property
     def max(self):
@@ -83,9 +73,7 @@ class Stage:
         """
         Get the stage position index
         """
-        _LOGGER.info("Reading position...")
-        if self._position is None:
-            raise AssertionError("Position is undefined. Go to home position")
+        _LOGGER.debug("Reading position...")
         return self._position
 
     @position.setter
@@ -97,13 +85,21 @@ class Stage:
         request -- requested position index
         """
         _LOGGER.info("Moving to position %r...", request)
+        self._goto_request(request)
+        self._position = request
+        self._at_home_position.clear()
+        _LOGGER.info("Done")
+
+    def _handle_end_stop_triggered(self, *args, **kwargs):
+        _LOGGER.info("End stop triggered: args=%r; kwargs=%r", args, kwargs)
+        self._at_home_position.set()
+
+    def _goto_request(self, request):
         if request > self._max or request < self._min:
-            raise error.OutOfRangeError("Cannot go to position %d" % request)
+            raise exceptions.OutOfRangeError("Cannot go to position %d" % request)
         delta = request - self._position
         if delta > 0:
             self.motor.forward(delta)
         else:
             self.motor.backward(delta)
         self.motor.deactivate()
-        self._position = request
-        _LOGGER.info("Done")

@@ -1,108 +1,81 @@
 import unittest
-from unittest.mock import Mock, patch, call
+from unittest import mock
 
-#################### patch gpio module before import ###########################
-import sys
-mock_gpio = Mock()
-mock_time = Mock()
-# This only seems to work in python 3.7
-sys.modules['RPi.GPIO'] = mock_gpio
-sys.modules['time'] = mock_time
-################################################################################
-from stage.config import (
-    MOTOR_CONFIG,
-    setup_logger,
-)
-from stage.motor import Motor
+from stage.motor import stepper
+from stage.motor import drive
+from stage.motor import coil
+from stage.gpio import mock as mockgpio
 
-SINGLE_STEP_FORWARD = [
-    call(13, 0),
-    call(26, 1),
-    call(6, 0),
-    call(19, 0),
-    call(13, 0),
-    call(26, 1),
-    call(6, 0),
-    call(19, 1),
-    call(13, 0),
-    call(26, 0),
-    call(6, 0),
-    call(19, 1),
-    call(13, 1),
-    call(26, 0),
-    call(6, 0),
-    call(19, 1),
-    call(13, 1),
-    call(26, 0),
-    call(6, 0),
-    call(19, 0),
-    call(13, 1),
-    call(26, 0),
-    call(6, 1),
-    call(19, 0),
-    call(13, 0),
-    call(26, 0),
-    call(6, 1),
-    call(19, 0),
-    call(13, 0),
-    call(26, 1),
-    call(6, 1),
-    call(19, 0)
-]
 
-SINGLE_STEP_BACKWARD = [
-    call(13, 0),
-    call(26, 1),
-    call(6, 1),
-    call(19, 0),
-    call(13, 0),
-    call(26, 0),
-    call(6, 1),
-    call(19, 0),
-    call(13, 1),
-    call(26, 0),
-    call(6, 1),
-    call(19, 0),
-    call(13, 1),
-    call(26, 0),
-    call(6, 0),
-    call(19, 0),
-    call(13, 1),
-    call(26, 0),
-    call(6, 0),
-    call(19, 1),
-    call(13, 0),
-    call(26, 0),
-    call(6, 0),
-    call(19, 1),
-    call(13, 0),
-    call(26, 1),
-    call(6, 0),
-    call(19, 1),
-    call(13, 0),
-    call(26, 1),
-    call(6, 0),
-    call(19, 0)
-]
-
-class StepperMotorTestGroup(unittest.TestCase):
+class StepperMotorAttributeTestGroup(unittest.TestCase):
 
     def setUp(self):
-        mock_gpio.reset_mock()
-        self.motor = Motor.from_config(MOTOR_CONFIG)
+        self.fake_coils = mock.Mock(spec=coil.Coils)
+        self.motor = stepper.UnipolarStepperMotor(
+            coils=self.fake_coils,
+            drive_scheme=drive.FullStepDriveScheme.name,
+            ms_delay=0)
+
+    def test_ms_delay_set_on_init_can_be_retreived(self):
+        self.assertEqual(self.motor.ms_delay, 0)
+
+    def test_drive_scheme_set_on_init_can_be_retreived(self):
+        self.assertEqual(self.motor.drive_scheme, drive.FullStepDriveScheme.name)
+
+
+class CoilActivationTestGroup(unittest.TestCase):
+    FAKE_PINS = coil.Pins(1,2,3,4)
+
+    def setUp(self):
+        self.fake_coils = coil.Coils(
+            *(mockgpio.OutputChannel(pin) for pin in type(self).FAKE_PINS))
+        self.motor = stepper.UnipolarStepperMotor(
+            coils=self.fake_coils,
+            drive_scheme=drive.FullStepDriveScheme.name,
+            ms_delay=0)
+
+    def test_coils_deactivated_after_init(self):
+        for coil in self.fake_coils.coils:
+            self.assertFalse(coil.state)
+
+    def test_correct_pins_initialised_as_outputs(self):
+        for coil, pin in zip(self.fake_coils.coils, self.FAKE_PINS):
+            self.assertEqual(coil.pin, pin)
+
+
+class DriveSchemeTestMixin:
+    drive_scheme = None
+
+    def setUp(self):
+        self.fake_coils = mock.Mock(spec=coil.Coils)
+        self.motor = stepper.UnipolarStepperMotor(
+            coils=self.fake_coils,
+            drive_scheme=self.drive_scheme.name,
+            ms_delay=0)
 
     def test_forward_step_gpio_sequence(self):
-        self.motor.forward(steps=1)
-        mock_gpio.output.assert_has_calls(SINGLE_STEP_FORWARD)
+        self.motor.forward(cycles=1)
+        self.fake_coils.set_state.assert_has_calls(
+            [mock.call(state) for state in self.drive_scheme.sequence])
 
     def test_backward_gpio_sequence(self):
-        self.motor.backward(steps=3)
-        mock_gpio.output.assert_has_calls(SINGLE_STEP_BACKWARD)
-        mock_gpio.output.assert_has_calls(SINGLE_STEP_BACKWARD)
-        mock_gpio.output.assert_has_calls(SINGLE_STEP_BACKWARD)
+        self.motor.backward(cycles=3)
+        expect = [mock.call(state) for state
+            in reversed(self.drive_scheme.sequence)] * 3
+        self.fake_coils.set_state.assert_has_calls(expect)
 
     def test_deactivate_turns_off_coils(self):
         self.motor.deactivate()
-        mock_gpio.output.assert_has_calls(
-            calls=[call(13, 0), call(26, 0), call(6, 0), call(19, 0),],
-            any_order=True)
+        self.fake_coils.deactivate.assert_called()
+
+
+class FullStepDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
+    drive_scheme = drive.FullStepDriveScheme
+
+
+class WaveDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
+    drive_scheme = drive.WaveDriveScheme
+
+
+class HalfStepDriveSchemeTestGroup(DriveSchemeTestMixin, unittest.TestCase):
+    drive_scheme = drive.HalfStepDriveScheme

@@ -22,26 +22,29 @@ def setup_logger():
         stream=stdout,
         level=logging.INFO)
 
-COIL_A1_PIN = 13 # pink
-COIL_A2_PIN = 26 # orange
-COIL_B1_PIN = 6  # blue
-COIL_B2_PIN = 19 # yellow
+COIL_A1_PIN = 26 # orange
+COIL_B1_PIN = 19 # yellow
+COIL_A2_PIN = 13 # pink
+COIL_B2_PIN = 6  # blue
 
+# the stepper sequence is very simple - this one is called "Full-step drive"
+# other drive schemes are also possible with the same hardware such as "full-
+# step" and "half-step". Using a list here is a noddy solution but works well.
 SEQUENCE = [
+    [1, 0, 0, 0],
+    [1, 1, 0, 0],
     [0, 1, 0, 0],
-    [0, 1, 0, 1],
+    [0, 1, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 1],
     [0, 0, 0, 1],
     [1, 0, 0, 1],
-    [1, 0, 0, 0],
-    [1, 0, 1, 0],
-    [0, 0, 1, 0],
-    [0, 1, 1, 0],
 ]
 
 END_STOP_PIN = 22
 
 MOTOR_CONFIG = {
-    'pins': [COIL_A1_PIN, COIL_A2_PIN, COIL_B1_PIN, COIL_B2_PIN],
+    'pins': [COIL_A1_PIN, COIL_B1_PIN, COIL_A2_PIN, COIL_B2_PIN],
     'sequence': SEQUENCE,
     'ms_delay': 10,
 }
